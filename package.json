@@ -9,15 +9,32 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.5.1",
+    "@tiptap/extension-color": "^3.26.0",
+    "@tiptap/extension-placeholder": "^3.26.0",
+    "@tiptap/extension-text-style": "^3.26.0",
+    "@tiptap/extension-underline": "^3.26.0",
+    "@tiptap/react": "^3.26.0",
+    "@tiptap/starter-kit": "^3.26.0",
+    "@tiptap/suggestion": "^3.26.0",
+    "docx": "^9.7.1",
+    "file-saver": "^2.0.5",
+    "html2pdf.js": "^0.14.0",
+    "lucide-react": "^1.17.0",
     "next": "16.2.7",
+    "openai": "^6.42.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-signature-canvas": "^1.1.0-alpha.2",
+    "tippy.js": "^6.3.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.5.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
     "tailwindcss": "^4",

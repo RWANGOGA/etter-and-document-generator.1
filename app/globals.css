@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@import "tippy.js/dist/tippy.css";
+
+html {
+  scroll-behavior: smooth;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* --- LATEX-STYLE TYPOGRAPHY --- */
+/* This class makes text look exactly like a beautifully formatted LaTeX document */
+.font-latex {
+  font-family: var(--font-serif);
+  font-size: 12pt; /* Standard formal letter size */
+  line-height: 1.6; /* Perfect breathing room between lines */
+  letter-spacing: 0.01em; /* Slight tracking for elegance */
+  text-align: justify; /* Justified text like formal documents */
+  color: #1a1a1a; /* Soft black, easier on the eyes than pure #000 */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Make the addresses slightly smaller and tighter, like real letters */
+.font-latex-address {
+  font-family: var(--font-serif);
+  font-size: 11pt;
+  line-height: 1.4;
+}
+/* --- ANIMATIONS FOR HOME PAGE --- */
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+.animate-blob { animation: blob 7s infinite; }
+.animation-delay-2000 { animation-delay: 2s; }
+.animation-delay-4000 { animation-delay: 4s; }
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up { animation: fade-in-up 0.8s ease-out forwards; opacity: 0; }
+.animation-delay-200 { animation-delay: 0.2s; }
+.animation-delay-400 { animation-delay: 0.4s; }
+.animation-delay-600 { animation-delay: 0.6s; }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-blink { animation: blink 1s step-end infinite; }
+
+@media print {
+  body * { visibility: hidden; }
+  #tiptap-editor, #tiptap-editor * { visibility: visible; }
+  #tiptap-editor {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  #tiptap-editor .tiptap {
+    padding: 40px 60px !important;
+    min-height: auto !important;
+  }
 }
