@@ -1,29 +1,31 @@
 @import "tailwindcss";
-
 @import "tippy.js/dist/tippy.css";
 
 html {
   scroll-behavior: smooth;
 }
 
-/* --- LATEX-STYLE TYPOGRAPHY --- */
-/* This class makes text look exactly like a beautifully formatted LaTeX document */
+/* =========================================
+   LATEX-STYLE TYPOGRAPHY (For Letters)
+   ========================================= */
 .font-latex {
   font-family: var(--font-serif);
-  font-size: 12pt; /* Standard formal letter size */
-  line-height: 1.6; /* Perfect breathing room between lines */
-  letter-spacing: 0.01em; /* Slight tracking for elegance */
-  text-align: justify; /* Justified text like formal documents */
-  color: #1a1a1a; /* Soft black, easier on the eyes than pure #000 */
+  font-size: 12pt;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  text-align: justify;
+  color: #1a1a1a;
 }
 
-/* Make the addresses slightly smaller and tighter, like real letters */
 .font-latex-address {
   font-family: var(--font-serif);
   font-size: 11pt;
   line-height: 1.4;
 }
-/* --- ANIMATIONS FOR HOME PAGE --- */
+
+/* =========================================
+   ANIMATIONS FOR HOME PAGE
+   ========================================= */
 @keyframes blob {
   0% { transform: translate(0px, 0px) scale(1); }
   33% { transform: translate(30px, -50px) scale(1.1); }
@@ -49,22 +51,77 @@ html {
 }
 .animate-blink { animation: blink 1s step-end infinite; }
 
+/* =========================================
+   DOCUMENT THEMES (For Document Creator)
+   ========================================= */
+
+/* 1. Academic Theme (Classic, double-spaced, serif) */
+.theme-academic {
+  font-family: 'Times New Roman', Times, serif;
+  line-height: 2; /* Double spacing */
+  font-size: 13pt;
+}
+.theme-academic h1, .theme-academic h2 {
+  font-family: 'Times New Roman', Times, serif;
+  font-weight: bold;
+}
+
+/* 2. Modern Business Theme (Clean, single-spaced, sans-serif, blue headings) */
+.theme-modern {
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.5;
+  font-size: 11pt;
+}
+.theme-modern h1, .theme-modern h2 {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1e40af; /* Blue headings */
+  font-weight: 800;
+}
+
+/* 3. Minimalist Theme (Sleek, subtle, uppercase headings) */
+.theme-minimalist {
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.8;
+  font-size: 12pt;
+  color: #475569; /* Slate gray text */
+}
+.theme-minimalist h1, .theme-minimalist h2 {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 300; /* Thin font */
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #0f172a;
+}
+
+/* =========================================
+   PRINT STYLES (For "Save as PDF")
+   ========================================= */
 @media print {
-  body * { visibility: hidden; }
-  #tiptap-editor, #tiptap-editor * { visibility: visible; }
-  #tiptap-editor {
+  /* Hide everything on the page by default */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Only show the document paper */
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+  
+  /* Format the paper perfectly for A4 printing */
+  .print-area {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
-    max-width: 100%;
-    padding: 0 !important;
-    margin: 0 !important;
+    margin: 0;
+    padding: 20mm; /* Standard A4 margins */
     box-shadow: none !important;
     border: none !important;
+    background: white !important;
   }
-  #tiptap-editor .tiptap {
-    padding: 40px 60px !important;
-    min-height: auto !important;
+
+  /* Force hide specific UI elements just in case */
+  .no-print {
+    display: none !important;
   }
 }
