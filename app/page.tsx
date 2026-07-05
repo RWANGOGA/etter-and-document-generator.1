@@ -1,61 +1,127 @@
 import Link from 'next/link';
-import { FileText, BookOpen, Layout, Download, CheckCircle, Zap } from 'lucide-react';
+import { FileText, BookOpen, CheckCircle, Zap, Layout, Download, Sparkles } from 'lucide-react';
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-white overflow-hidden">
-      
-      {/* HERO SECTION */}
-      <section className="relative max-w-6xl mx-auto px-6 py-20 md:py-32 text-center overflow-hidden">
-        {/* Animated Gradient Blobs */}
-        <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-40 animate-blob"></div>
-        <div className="absolute top-0 right-1/4 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-40 animate-blob animation-delay-2000"></div>
 
-        <div className="relative z-10">
-          <div className="inline-block px-4 py-1.5 mb-6 text-sm font-semibold text-blue-700 bg-blue-50 rounded-full border border-blue-100">
-            Professional Document Generation
+      {/* HERO SECTION */}
+      <section
+        className="relative px-6 py-24 md:py-40 text-center overflow-hidden"
+        style={{
+          backgroundImage:
+            'url("https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1800&q=85")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 35%',
+        }}
+      >
+        {/* Rich gradient overlay instead of flat dark tint */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-indigo-950/75 to-blue-900/70" />
+
+        {/* Layered glow blobs for depth */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-soft-light filter blur-3xl opacity-40 animate-blob" />
+        <div className="absolute top-10 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-soft-light filter blur-3xl opacity-40 animate-blob animation-delay-2000" />
+        <div className="absolute bottom-0 left-1/3 w-96 h-96 bg-cyan-400 rounded-full mix-blend-soft-light filter blur-3xl opacity-25 animate-blob animation-delay-4000" />
+
+        <div className="relative z-10 max-w-6xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 text-sm font-semibold text-blue-200 bg-blue-500/10 rounded-full border border-blue-400/30 backdrop-blur-sm">
+            <Sparkles className="w-4 h-4" />
+            Professional Documents, Zero Design Skills Needed
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6">
-            Write Beautiful Documents <br className="hidden md:block" />
-            <span className="text-blue-600">Without the Stress.</span>
+          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight mb-6 animate-fade-in-up">
+            Write Documents People <br className="hidden md:block" />
+            <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">
+              Actually Want to Read.
+            </span>
           </h1>
-          <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Whether you need a quick formal letter or a long, perfectly formatted coursework report, we handle the design so you can focus on the words.
+          <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animation-delay-200">
+            From a quick formal letter to a fully formatted coursework report — type your words, and we handle every margin, heading, and page break.
           </p>
-          
+
           {/* THE TWO PATHS */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link 
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up animation-delay-400">
+            <Link
               href="/generator"
-              className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 hover:scale-105"
+              className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40 hover:scale-105"
             >
               <FileText className="w-5 h-5" />
               Create a Formal Letter
             </Link>
-            
-            {/* NEW BUTTON FOR DOCUMENTS */}
-            <Link 
+
+            <Link
               href="/documents"
-              className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:border-purple-400 hover:text-purple-600 transition-all shadow-sm hover:shadow-md hover:scale-105"
+              className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-white/10 border-2 border-white/30 rounded-xl hover:border-purple-400 hover:text-purple-300 hover:bg-white/15 transition-all shadow-sm hover:shadow-md hover:scale-105 backdrop-blur-sm"
             >
               <BookOpen className="w-5 h-5" />
               Create a Document / Report
             </Link>
           </div>
+
+          {/* Trust strip */}
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mt-12 text-sm text-white/60 animate-fade-in-up animation-delay-600">
+            <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-400" /> No sign-up required</span>
+            <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-400" /> Download as PDF or Word</span>
+            <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-400" /> Ready in under 2 minutes</span>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="py-20 bg-gradient-to-b from-white to-slate-50">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">Three Steps. Zero Stress.</h2>
+            <p className="text-slate-600">No formatting menus to fight with — just write, and it looks right.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center px-4">
+              <div className="w-14 h-14 mx-auto bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+                <Layout className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">1. Pick a Style</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">Choose a layout — academic, modern business, minimalist, or a classic published-book look.</p>
+            </div>
+            <div className="text-center px-4">
+              <div className="w-14 h-14 mx-auto bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+                <Zap className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">2. Just Type</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">Headings, spacing, and structure are handled automatically as you write — no manual formatting.</p>
+            </div>
+            <div className="text-center px-4">
+              <div className="w-14 h-14 mx-auto bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+                <Download className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">3. Download & Send</h3>
+              <p className="text-slate-600 text-sm leading-relaxed">Export a polished PDF or an editable Word file, ready to submit or send.</p>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* CHOOSE YOUR TOOL SECTION */}
-      <section className="bg-slate-50 py-20 border-y border-slate-100">
-        <div className="max-w-5xl mx-auto px-6">
+      <section
+        className="py-20 border-y border-slate-100 relative overflow-hidden"
+        style={{
+          backgroundImage:
+            'url("https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1800&q=85")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Warmer tinted overlay for a more cohesive feel with the hero */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/92 via-white/90 to-slate-50/92" />
+
+        <div className="relative z-10 max-w-5xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">Choose Your Tool</h2>
-            <p className="text-slate-600">Two powerful ways to create professional content.</p>
+            <p className="text-slate-600">Two focused tools, each built for a different kind of writing.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Letter Card */}
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-xl transition-all">
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-6">
                 <FileText className="w-6 h-6" />
               </div>
@@ -64,15 +130,15 @@ export default function Home() {
                 Perfect for quick, formal correspondence. Choose a layout, fill in the blanks, and download a perfectly formatted letter.
               </p>
               <ul className="space-y-2 text-sm text-slate-500 mb-6">
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Resignation & Cover Letters</li>
+                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Resignation &amp; Cover Letters</li>
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Formal Complaints</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> AI Polish & Rewrite</li>
+                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Instant Polish &amp; Rewrite</li>
               </ul>
               <Link href="/generator" className="text-blue-600 font-semibold hover:underline">Start a Letter &rarr;</Link>
             </div>
 
             {/* Document Card */}
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-xl transition-all">
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all">
               <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-6">
                 <BookOpen className="w-6 h-6" />
               </div>
@@ -81,9 +147,9 @@ export default function Home() {
                 A smart, zero-friction editor for long-form content. Just type your coursework or reports, and the system handles the formatting.
               </p>
               <ul className="space-y-2 text-sm text-slate-500 mb-6">
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Coursework & Essays</li>
+                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Coursework &amp; Essays</li>
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Business Proposals</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Smart Auto-Formatting</li>
+                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Automatic Formatting</li>
               </ul>
               <Link href="/documents" className="text-purple-600 font-semibold hover:underline">Start a Document &rarr;</Link>
             </div>
@@ -92,18 +158,29 @@ export default function Home() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 py-16 relative overflow-hidden">
-         <div className="max-w-4xl mx-auto px-6 text-center text-white relative z-10">
-            <h2 className="text-3xl font-bold mb-4">Ready to create something amazing?</h2>
-            <p className="text-blue-100 text-lg mb-8">It takes less than 2 minutes to generate a perfectly formatted document.</p>
-            <Link 
-               href="/generator"
-               className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-blue-600 bg-white rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:scale-105"
-            >
-               <CheckCircle className="w-5 h-5" />
-               Get Started Now
-            </Link>
-         </div>
+      <section
+        className="py-20 relative overflow-hidden"
+        style={{
+          backgroundImage:
+            'url("https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=1800&q=85")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 40%',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/88 via-indigo-950/85 to-purple-950/88" />
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-400 rounded-full mix-blend-soft-light filter blur-3xl opacity-30 animate-blob" />
+
+        <div className="max-w-4xl mx-auto px-6 text-center text-white relative z-10">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Your Next Document Starts Here.</h2>
+          <p className="text-blue-100 text-lg mb-8">It takes less than 2 minutes to go from a blank page to a document worth sending.</p>
+          <Link
+            href="/generator"
+            className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-blue-700 bg-white rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:scale-105"
+          >
+            <CheckCircle className="w-5 h-5" />
+            Get Started Now
+          </Link>
+        </div>
       </section>
 
     </main>

@@ -33,7 +33,7 @@ export default function RootLayout({
           <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold font-serif">L</div>
-              <h1 className="text-xl font-bold text-slate-800">LetterGen</h1>
+              <h1 className="text-xl font-bold text-slate-800">LetDoc</h1>
             </div>
           </div>
         </header>
@@ -44,7 +44,7 @@ export default function RootLayout({
 
         <footer className="bg-white border-t border-slate-200 py-6">
           <div className="max-w-6xl mx-auto px-6 text-center text-slate-500 text-sm">
-            &copy; 2026 LetterGen.
+            &copy; 2026 LetDoc
           </div>
         </footer>
 
