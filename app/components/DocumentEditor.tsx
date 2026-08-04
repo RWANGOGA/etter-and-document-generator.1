@@ -7,42 +7,58 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { Underline } from '@tiptap/extension-underline';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import { Image } from '@tiptap/extension-image'; 
-// 1. Fixed the import: Added ChevronDown to the list of icons
-import { 
-  Bold, Italic, List, Heading1, Heading2, Sparkles, Loader2, 
-  Underline as UnderlineIcon, Palette, Stamp, X, Printer, 
+import { Image } from '@tiptap/extension-image';
+import {
+  Bold, Italic, List, Heading1, Heading2, Sparkles, Loader2,
+  Underline as UnderlineIcon, Palette, Stamp, X, Printer,
   RotateCcw, Image as ImageIcon, ChevronDown, PenLine, Wand2,
   Download, FileText, FileType
 } from 'lucide-react';
 import { SlashCommand } from './editor/SlashCommandExtension';
-import { generateLetterContent } from '@/app/actions/aiActions';
 import AIGenerateModal from './AIGenerateModal';
+import { generateDocumentWord } from '@/app/lib/documentWordExport';
+import { api } from '@/app/lib/api';
 
-export default function DocumentEditor() {
+interface DocumentEditorProps {
+  documentId: string;
+  title: string;
+}
+
+export default function DocumentEditor({ documentId }: DocumentEditorProps) {
   const [isFixing, setIsFixing] = useState(false);
   const [fixError, setFixError] = useState('');
   const [isContinuing, setIsContinuing] = useState(false);
   const [continueError, setContinueError] = useState('');
   const [showAIDocModal, setShowAIDocModal] = useState(false);
-  const [theme, setTheme] = useState('academic'); // Default to Academic
-  const [watermark, setWatermark] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('doc-watermark') || '';
-    }
-    return '';
-  });
+  const [theme, setTheme] = useState('academic');
+  const [watermark, setWatermark] = useState('');
   const [showWatermarkInput, setShowWatermarkInput] = useState(false);
-
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const [isDownloadingWord, setIsDownloadingWord] = useState(false);
   const [downloadError, setDownloadError] = useState('');
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const printAreaRef = useRef<HTMLDivElement>(null);
   const downloadMenuRef = useRef<HTMLDivElement>(null);
-  const savedContent = typeof window !== 'undefined' ? localStorage.getItem('doc-content') : null;
+
+  // Persist the document content to the backend API
+  const persist = async (html: string, wm: string) => {
+    try {
+      setIsSaving(true);
+      await api.documents.update(documentId, {
+        content: {
+          kind: 'freeform',
+          html,
+          watermark: wm || undefined,
+        },
+      });
+    } catch (err) {
+      console.error('Failed to save document:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const editor = useEditor({
     extensions: [
@@ -52,26 +68,28 @@ export default function DocumentEditor() {
       Underline,
       TextStyle,
       Color,
-      Image, 
+      Image,
     ],
-    content: savedContent || '<p></p>',
+    content: '<p></p>',
     editorProps: {
       attributes: {
-        spellcheck: 'true', 
+        spellcheck: 'true',
         autocorrect: 'on',
         class: 'prose prose-lg max-w-none focus:outline-none min-h-[800px] p-12 font-serif text-slate-800 leading-relaxed relative z-10',
       },
     },
     onUpdate: ({ editor }) => {
-      localStorage.setItem('doc-content', editor.getHTML());
+      persist(editor.getHTML(), watermark);
     },
   });
 
   useEffect(() => {
-    localStorage.setItem('doc-watermark', watermark);
+    if (editor && watermark) {
+      persist(editor.getHTML(), watermark);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watermark]);
 
-  // Close the download dropdown when clicking outside it
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (downloadMenuRef.current && !downloadMenuRef.current.contains(event.target as Node)) {
@@ -95,12 +113,15 @@ export default function DocumentEditor() {
 
     setIsFixing(true);
     try {
-      const result = await generateLetterContent('', 'fix-grammar', currentText);
-
+      const result = await api.generate({
+        prompt: '',
+        mode: 'fix-grammar',
+        currentText,
+      });
       if (result.success && result.text) {
         editor.commands.setContent(result.text);
       } else {
-        setFixError(result.text || 'AI Fix Grammar failed for an unknown reason.');
+        setFixError(result.error || 'AI Fix Grammar failed for an unknown reason.');
       }
     } catch (err) {
       console.error('handleFixGrammar unexpected error:', err);
@@ -110,8 +131,6 @@ export default function DocumentEditor() {
     }
   };
 
-  // AI writes the ENTIRE document from a short prompt/topic and drops it
-  // straight into the editor, replacing whatever is there.
   const handleDocumentGenerated = (html: string) => {
     const hasExistingContent = editor.getText().trim().length > 0;
     if (hasExistingContent) {
@@ -121,12 +140,9 @@ export default function DocumentEditor() {
       if (!confirmed) return;
     }
     editor.commands.setContent(html);
-    localStorage.setItem('doc-content', editor.getHTML());
+    persist(editor.getHTML(), watermark);
   };
 
-  // "Continue Writing" — autocomplete for the whole document. Sends what's
-  // already written and asks the AI to keep going in the same style, then
-  // appends the result at the end of the document.
   const handleContinueWriting = async () => {
     const currentText = editor.getText();
     setContinueError('');
@@ -138,13 +154,16 @@ export default function DocumentEditor() {
 
     setIsContinuing(true);
     try {
-      const result = await generateLetterContent('', 'continue', editor.getHTML());
-
+      const result = await api.generate({
+        prompt: '',
+        mode: 'continue',
+        currentText: editor.getHTML(),
+      });
       if (result.success && result.text) {
         editor.chain().focus('end').insertContent(result.text).run();
-        localStorage.setItem('doc-content', editor.getHTML());
+        persist(editor.getHTML(), watermark);
       } else {
-        setContinueError(result.text || 'AI could not continue the document.');
+        setContinueError(result.error || 'AI could not continue the document.');
       }
     } catch (err) {
       console.error('handleContinueWriting unexpected error:', err);
@@ -158,8 +177,6 @@ export default function DocumentEditor() {
     window.print();
   };
 
-  // Real PDF download (not just the print dialog). Renders the paper area
-  // to a canvas and slices it across A4 pages inside a downloadable PDF.
   const handleDownloadPDF = async () => {
     if (!printAreaRef.current) return;
     setDownloadError('');
@@ -203,51 +220,28 @@ export default function DocumentEditor() {
     }
   };
 
-  // Real Word (.docx) download using html-docx-js, which converts the
-  // editor's HTML into a genuine .docx file Word can open directly.
-  const handleDownloadWord = async () => {
+  const handleDownloadWordClick = async () => {
     setDownloadError('');
     setIsDownloadingWord(true);
     try {
-      // @ts-ignore - html-docx-js ships no TypeScript types
-      const htmlDocx = await import('html-docx-js/dist/html-docx');
-      const { saveAs } = await import('file-saver');
-
-      const editorHtml = editor.getHTML();
-
-      // Watermark's diagonal CSS overlay doesn't translate to Word, so we
-      // add a simple visible banner line instead when one is set.
-      const watermarkBanner = watermark
-        ? `<p style="color:#b45309;font-weight:bold;letter-spacing:2px;text-align:center;">${watermark}</p>`
-        : '';
-
-      const fullHtml = `
-        <!DOCTYPE html>
-        <html>
-          <head><meta charset="utf-8"><title>Document</title></head>
-          <body style="font-family: Georgia, 'Times New Roman', serif; color:#1f2937;">
-            ${watermarkBanner}
-            ${editorHtml}
-          </body>
-        </html>
-      `;
-
-      const blob = htmlDocx.asBlob(fullHtml);
-      saveAs(blob, 'document.docx');
+      await generateDocumentWord(editor.getHTML(), watermark);
     } catch (err) {
-      console.error('handleDownloadWord error:', err);
+      console.error('handleDownloadWordClick error:', err);
       setDownloadError('Could not generate the Word document. Check the terminal/browser console for details.');
     } finally {
       setIsDownloadingWord(false);
     }
   };
 
-  const handleClearDocument = () => {
+  const handleClearDocument = async () => {
     if (window.confirm('Are you sure? This will delete your current document and start fresh.')) {
-      localStorage.removeItem('doc-title');
-      localStorage.removeItem('doc-content');
-      localStorage.removeItem('doc-watermark');
-      window.location.reload();
+      try {
+        await api.documents.delete(documentId);
+        window.location.href = '/documents';
+      } catch (err) {
+        console.error('Failed to delete document:', err);
+        alert('Failed to delete document');
+      }
     }
   };
 
@@ -263,7 +257,7 @@ export default function DocumentEditor() {
       }
     };
     reader.readAsDataURL(file);
-    
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -273,13 +267,13 @@ export default function DocumentEditor() {
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto">
-      
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleImageUpload} 
-        accept="image/*" 
-        className="hidden" 
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        accept="image/*"
+        className="hidden"
       />
 
       <AIGenerateModal
@@ -291,11 +285,11 @@ export default function DocumentEditor() {
 
       {/* Toolbar */}
       <div className="no-print sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200 p-2 flex gap-1 rounded-t-xl shadow-sm flex-wrap items-center">
-        
+
         <button onClick={() => editor.chain().focus().toggleBold().run()} className={btnClass(editor.isActive('bold'))} title="Bold"><Bold className="w-4 h-4" /></button>
         <button onClick={() => editor.chain().focus().toggleItalic().run()} className={btnClass(editor.isActive('italic'))} title="Italic"><Italic className="w-4 h-4" /></button>
         <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={btnClass(editor.isActive('underline'))} title="Underline"><UnderlineIcon className="w-4 h-4" /></button>
-        
+
         <div className="relative group">
           <button className={btnClass(false)} title="Text Color"><Palette className="w-4 h-4" /></button>
           <input type="color" onInput={(e) => editor.chain().focus().setColor((e.target as HTMLInputElement).value).run()} value={editor.getAttributes('textStyle').color || '#000000'} className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer" />
@@ -311,12 +305,11 @@ export default function DocumentEditor() {
           <ImageIcon className="w-4 h-4" />
         </button>
 
-        <div className="flex-grow"></div>
+        <div className="grow"></div>
 
-        {/* THEME SWITCHER */}
         <div className="relative">
-          <select 
-            value={theme} 
+          <select
+            value={theme}
             onChange={(e) => setTheme(e.target.value)}
             className="appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg px-3 py-1.5 pr-8 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer"
           >
@@ -338,7 +331,6 @@ export default function DocumentEditor() {
           {watermark ? 'Edit Watermark' : 'Watermark'}
         </button>
 
-        {/* DOWNLOAD DROPDOWN */}
         <div className="relative" ref={downloadMenuRef}>
           <button
             onClick={() => setShowDownloadMenu(!showDownloadMenu)}
@@ -361,7 +353,7 @@ export default function DocumentEditor() {
                 {isDownloadingPDF ? 'Preparing PDF...' : 'Download as PDF'}
               </button>
               <button
-                onClick={() => { setShowDownloadMenu(false); handleDownloadWord(); }}
+                onClick={() => { setShowDownloadMenu(false); handleDownloadWordClick(); }}
                 disabled={isDownloadingWord}
                 className="w-full text-left px-3 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 disabled:opacity-50 border-t border-slate-100"
               >
@@ -404,7 +396,6 @@ export default function DocumentEditor() {
         </button>
       </div>
 
-      {/* Fix Grammar Error Banner */}
       {fixError && (
         <div className="no-print bg-red-50 border-b border-red-200 px-4 py-2 flex items-center justify-between gap-3">
           <p className="text-xs text-red-600 font-medium">{fixError}</p>
@@ -414,7 +405,6 @@ export default function DocumentEditor() {
         </div>
       )}
 
-      {/* Continue Writing Error Banner */}
       {continueError && (
         <div className="no-print bg-indigo-50 border-b border-indigo-200 px-4 py-2 flex items-center justify-between gap-3">
           <p className="text-xs text-indigo-700 font-medium">{continueError}</p>
@@ -424,7 +414,6 @@ export default function DocumentEditor() {
         </div>
       )}
 
-      {/* Download Error Banner */}
       {downloadError && (
         <div className="no-print bg-red-50 border-b border-red-200 px-4 py-2 flex items-center justify-between gap-3">
           <p className="text-xs text-red-600 font-medium">{downloadError}</p>
@@ -434,17 +423,15 @@ export default function DocumentEditor() {
         </div>
       )}
 
-      {/* Watermark Input Bar */}
       {showWatermarkInput && (
         <div className="no-print bg-amber-50 border-b border-amber-200 p-3 flex items-center gap-3 animate-in slide-in-from-top-2">
           <Stamp className="w-4 h-4 text-amber-600" />
-          <input type="text" value={watermark} onChange={(e) => setWatermark(e.target.value.toUpperCase())} placeholder="e.g., DRAFT, CONFIDENTIAL" className="flex-grow bg-white border border-amber-300 rounded px-3 py-1.5 text-sm font-bold text-amber-800 placeholder-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 uppercase" autoFocus />
+          <input type="text" value={watermark} onChange={(e) => setWatermark(e.target.value.toUpperCase())} placeholder="e.g., DRAFT, CONFIDENTIAL" className="grow bg-white border border-amber-300 rounded px-3 py-1.5 text-sm font-bold text-amber-800 placeholder-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 uppercase" autoFocus />
           <button onClick={() => { setWatermark(''); setShowWatermarkInput(false); }} className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg" title="Remove Watermark"><X className="w-4 h-4" /></button>
         </div>
       )}
 
-      {/* The "A4 Paper" Typing Area */}
-      <div className="bg-white shadow-lg border border-slate-200 rounded-b-xl flex-grow overflow-y-auto relative">
+      <div className="bg-white shadow-lg border border-slate-200 rounded-b-xl grow overflow-y-auto relative">
         <div ref={printAreaRef} className={`print-area w-full min-h-full p-12 relative ${theme === 'book' ? 'bg-[#fdfbf3]' : 'bg-white'}`}>
           {watermark && (
             <div className="watermark-layer absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
@@ -453,11 +440,10 @@ export default function DocumentEditor() {
               </span>
             </div>
           )}
-          
-          {/* 2. Applied the Theme Class here! */}
+
           <div className={`relative z-10 ${
-            theme === 'academic' ? 'theme-academic' : 
-            theme === 'modern' ? 'theme-modern' : 
+            theme === 'academic' ? 'theme-academic' :
+            theme === 'modern' ? 'theme-modern' :
             theme === 'book' ? 'theme-book' :
             'theme-minimalist'
           }`}>
@@ -467,7 +453,6 @@ export default function DocumentEditor() {
       </div>
 
       <style jsx global>{`
-        /* ===== Force colors/backgrounds to survive print + PDF capture ===== */
         .watermark-layer,
         .watermark-layer * {
           -webkit-print-color-adjust: exact !important;
@@ -486,7 +471,6 @@ export default function DocumentEditor() {
           @page { size: A4; margin: 18mm; }
         }
 
-        /* ===== Academic theme ===== */
         .theme-academic h1 { font-size: 2rem; font-weight: 700; color: #1e3a5f; margin-bottom: 0.75rem; line-height: 1.25; }
         .theme-academic h2 { font-size: 1.5rem; font-weight: 600; color: #2b4a6f; margin-top: 1.75rem; margin-bottom: 0.5rem; }
         .theme-academic h3 { font-size: 1.2rem; font-weight: 600; color: #3a5a7f; margin-top: 1.25rem; margin-bottom: 0.4rem; }
@@ -494,7 +478,6 @@ export default function DocumentEditor() {
         .theme-academic ul, .theme-academic ol { color: #374151; line-height: 1.8; padding-left: 1.5rem; margin-bottom: 1rem; }
         .theme-academic blockquote { border-left: 3px solid #cbd5e1; padding-left: 1rem; color: #64748b; font-style: italic; margin: 1rem 0; }
 
-        /* ===== Modern Business theme ===== */
         .theme-modern .ProseMirror { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif !important; }
         .theme-modern h1 { font-size: 2.1rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; margin-bottom: 0.75rem; }
         .theme-modern h2 { font-size: 1.4rem; font-weight: 700; color: #1e293b; margin-top: 1.75rem; margin-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.25rem; }
@@ -503,7 +486,6 @@ export default function DocumentEditor() {
         .theme-modern ul, .theme-modern ol { color: #334155; line-height: 1.75; padding-left: 1.5rem; margin-bottom: 1rem; }
         .theme-modern blockquote { border-left: 3px solid #94a3b8; padding-left: 1rem; color: #475569; font-style: italic; margin: 1rem 0; }
 
-        /* ===== Minimalist theme ===== */
         .theme-minimalist h1 { font-size: 1.8rem; font-weight: 600; color: #18181b; margin-bottom: 0.6rem; }
         .theme-minimalist h2 { font-size: 1.3rem; font-weight: 500; color: #3f3f46; margin-top: 1.5rem; margin-bottom: 0.4rem; }
         .theme-minimalist h3 { font-size: 1.05rem; font-weight: 500; color: #52525b; margin-top: 1rem; margin-bottom: 0.3rem; }
@@ -511,7 +493,6 @@ export default function DocumentEditor() {
         .theme-minimalist ul, .theme-minimalist ol { color: #52525b; line-height: 1.9; padding-left: 1.4rem; margin-bottom: 1rem; }
         .theme-minimalist blockquote { border-left: 2px solid #d4d4d8; padding-left: 1rem; color: #71717a; font-style: italic; margin: 1rem 0; }
 
-        /* ===== Book / LaTeX theme ===== */
         .theme-book .ProseMirror { font-family: Georgia, 'Times New Roman', serif !important; color: #262220; }
         .theme-book { counter-reset: book-h2; }
         .theme-book h1 {

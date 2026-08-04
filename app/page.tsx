@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FileText, BookOpen, CheckCircle, Zap, Layout, Download, Sparkles } from 'lucide-react';
+import { FileText, BookOpen } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -16,7 +16,7 @@ export default function Home() {
         }}
       >
         {/* Rich gradient overlay instead of flat dark tint */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-indigo-950/75 to-blue-900/70" />
+        <div className="absolute inset-0 bg-linear-to-br from-slate-950/85 via-indigo-950/75 to-blue-900/70" />
 
         {/* Layered glow blobs for depth */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-soft-light filter blur-3xl opacity-40 animate-blob" />
@@ -25,12 +25,14 @@ export default function Home() {
 
         <div className="relative z-10 max-w-6xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 text-sm font-semibold text-blue-200 bg-blue-500/10 rounded-full border border-blue-400/30 backdrop-blur-sm">
-            <Sparkles className="w-4 h-4" />
+            <div className="w-5 h-5 rounded-full bg-linear-to-br from-blue-300 to-cyan-300 flex items-center justify-center">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-900" />
+            </div>
             Professional Documents, Zero Design Skills Needed
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight mb-6 animate-fade-in-up">
             Write Documents People <br className="hidden md:block" />
-            <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">
               Actually Want to Read.
             </span>
           </h1>
@@ -59,15 +61,30 @@ export default function Home() {
 
           {/* Trust strip */}
           <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mt-12 text-sm text-white/60 animate-fade-in-up animation-delay-600">
-            <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-400" /> No sign-up required</span>
-            <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-400" /> Download as PDF or Word</span>
-            <span className="flex items-center gap-1.5"><CheckCircle className="w-4 h-4 text-emerald-400" /> Ready in under 2 minutes</span>
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              No sign-up required
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Download as PDF or Word
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Ready in under 2 minutes
+            </span>
           </div>
         </div>
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="py-20 bg-gradient-to-b from-white to-slate-50">
+      <section className="py-20 bg-linear-to-b from-white to-slate-50">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">Three Steps. Zero Stress.</h2>
@@ -76,22 +93,29 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center px-4">
-              <div className="w-14 h-14 mx-auto bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
-                <Layout className="w-7 h-7" />
+              <div className="w-20 h-20 mx-auto bg-linear-to-br from-blue-100 to-blue-50 border-2 border-blue-200 rounded-3xl flex items-center justify-center mb-5 shadow-md hover:shadow-lg transition-shadow">
+                <svg className="w-10 h-10 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+                </svg>
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">1. Pick a Style</h3>
               <p className="text-slate-600 text-sm leading-relaxed">Choose a layout — academic, modern business, minimalist, or a classic published-book look.</p>
             </div>
             <div className="text-center px-4">
-              <div className="w-14 h-14 mx-auto bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
-                <Zap className="w-7 h-7" />
+              <div className="w-20 h-20 mx-auto bg-linear-to-br from-purple-100 to-purple-50 border-2 border-purple-200 rounded-3xl flex items-center justify-center mb-5 shadow-md hover:shadow-lg transition-shadow">
+                <svg className="w-10 h-10 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 13h2v8H3zm4-8h2v16H7zm4-2h2v18h-2zm4-2h2v20h-2zm4 4h2v16h-2zm4 8h2v8h-2z" />
+                </svg>
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">2. Just Type</h3>
               <p className="text-slate-600 text-sm leading-relaxed">Headings, spacing, and structure are handled automatically as you write — no manual formatting.</p>
             </div>
             <div className="text-center px-4">
-              <div className="w-14 h-14 mx-auto bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
-                <Download className="w-7 h-7" />
+              <div className="w-20 h-20 mx-auto bg-linear-to-br from-emerald-100 to-emerald-50 border-2 border-emerald-200 rounded-3xl flex items-center justify-center mb-5 shadow-md hover:shadow-lg transition-shadow">
+                <svg className="w-10 h-10 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 12a7 7 0 11-14 0 7 7 0 0114 0z M9 16.17L5.83 13m0 0l-1.41 1.41M4.42 13l1.41 1.41m0 0L9 18.17" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  <path d="M14 8h-4m0 0L8 4m0 0l2 4" stroke="currentColor" strokeWidth="2" fill="none"/>
+                </svg>
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">3. Download & Send</h3>
               <p className="text-slate-600 text-sm leading-relaxed">Export a polished PDF or an editable Word file, ready to submit or send.</p>
@@ -111,7 +135,7 @@ export default function Home() {
         }}
       >
         {/* Warmer tinted overlay for a more cohesive feel with the hero */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/92 via-white/90 to-slate-50/92" />
+        <div className="absolute inset-0 bg-linear-to-b from-white/92 via-white/90 to-slate-50/92" />
 
         <div className="relative z-10 max-w-5xl mx-auto px-6">
           <div className="text-center mb-12">
@@ -130,9 +154,24 @@ export default function Home() {
                 Perfect for quick, formal correspondence. Choose a layout, fill in the blanks, and download a perfectly formatted letter.
               </p>
               <ul className="space-y-2 text-sm text-slate-500 mb-6">
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Resignation &amp; Cover Letters</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Formal Complaints</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Instant Polish &amp; Rewrite</li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Resignation &amp; Cover Letters
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Formal Complaints
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Instant Polish &amp; Rewrite
+                </li>
               </ul>
               <Link href="/generator" className="text-blue-600 font-semibold hover:underline">Start a Letter &rarr;</Link>
             </div>
@@ -147,9 +186,24 @@ export default function Home() {
                 A smart, zero-friction editor for long-form content. Just type your coursework or reports, and the system handles the formatting.
               </p>
               <ul className="space-y-2 text-sm text-slate-500 mb-6">
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Coursework &amp; Essays</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Business Proposals</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Automatic Formatting</li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Coursework &amp; Essays
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Business Proposals
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Automatic Formatting
+                </li>
               </ul>
               <Link href="/documents" className="text-purple-600 font-semibold hover:underline">Start a Document &rarr;</Link>
             </div>
@@ -167,7 +221,7 @@ export default function Home() {
           backgroundPosition: 'center 40%',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/88 via-indigo-950/85 to-purple-950/88" />
+        <div className="absolute inset-0 bg-linear-to-r from-blue-950/88 via-indigo-950/85 to-purple-950/88" />
         <div className="absolute top-0 right-0 w-80 h-80 bg-blue-400 rounded-full mix-blend-soft-light filter blur-3xl opacity-30 animate-blob" />
 
         <div className="max-w-4xl mx-auto px-6 text-center text-white relative z-10">
@@ -177,7 +231,9 @@ export default function Home() {
             href="/generator"
             className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-blue-700 bg-white rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:scale-105"
           >
-            <CheckCircle className="w-5 h-5" />
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
             Get Started Now
           </Link>
         </div>

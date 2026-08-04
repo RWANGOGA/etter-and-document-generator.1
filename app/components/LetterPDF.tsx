@@ -1,6 +1,6 @@
-import { Document, Page, Text, View, StyleSheet,Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import type { LetterData } from './LetterPreview';
-
+import { computeLetterModel, type Align } from '@/app/lib/letterModel';
 
 // Define styles to mimic our beautiful LaTeX look
 const styles = StyleSheet.create({
@@ -26,8 +26,14 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontFamily: 'Times-Bold',
-  }
+  },
 });
+
+const pdfAlign: Record<Align, 'left' | 'right' | 'center'> = {
+  left: 'left',
+  right: 'right',
+  center: 'center',
+};
 
 interface LetterPDFProps {
   data: LetterData;
@@ -35,20 +41,14 @@ interface LetterPDFProps {
 }
 
 export default function LetterPDF({ data, layout }: LetterPDFProps) {
-  const formattedDate = data.date ? new Date(data.date).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  }) : '';
-
-  // Determine alignments based on layout
-  const senderAlign = layout === 'block' ? 'left' : layout === 'modified-block' ? 'right' : 'center';
-  const dateAlign = layout === 'modified-block' ? 'right' : 'left';
+  const model = computeLetterModel(data, layout);
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        
+
         {/* 1. Sender Address */}
-        <View style={[styles.addressBlock, { textAlign: senderAlign }]}>
+        <View style={[styles.addressBlock, { textAlign: pdfAlign[model.senderAlign] }]}>
           <Text style={styles.bold}>{data.senderName || 'Your Name'}</Text>
           <Text>{data.senderAddress}</Text>
           <Text>{data.senderCity}</Text>
@@ -56,8 +56,8 @@ export default function LetterPDF({ data, layout }: LetterPDFProps) {
         </View>
 
         {/* 2. Date */}
-        <View style={[styles.dateBlock, { textAlign: dateAlign }]}>
-          <Text>{formattedDate}</Text>
+        <View style={[styles.dateBlock, { textAlign: pdfAlign[model.dateAlign] }]}>
+          <Text>{model.formattedDate}</Text>
         </View>
 
         {/* 3. Recipient Address (Always Left) */}
@@ -71,13 +71,13 @@ export default function LetterPDF({ data, layout }: LetterPDFProps) {
 
         {/* 4. Salutation */}
         <View style={{ marginBottom: 15 }}>
-          <Text>Dear {data.recipientName ? data.recipientName.split(' ')[0] : 'Sir/Madam'},</Text>
+          <Text>{model.salutation}</Text>
         </View>
 
         {/* 5. Subject */}
-        {data.subject && (
+        {model.subjectLine && (
           <View style={{ marginBottom: 20, textAlign: 'center', textDecoration: 'underline' }}>
-            <Text style={styles.bold}>RE: {data.subject.toUpperCase()}</Text>
+            <Text style={styles.bold}>{model.subjectLine}</Text>
           </View>
         )}
 
@@ -86,21 +86,20 @@ export default function LetterPDF({ data, layout }: LetterPDFProps) {
           <Text>{data.body}</Text>
         </View>
 
-             {/* 7. Closing */}
-     <View style={{ marginTop: 40 }}>
-        <Text>Sincerely,</Text>
-        <Text style={{ height: 20 }}>{''}</Text>
-       
-       {/* Render Signature in PDF */}
-       {data.signatureData && (
-         <Image 
-           src={data.signatureData} 
-           style={{ width: 120, height: 40, marginBottom: 5 }} 
-         />
-       )}
-       
-       <Text style={styles.bold}>{data.senderName}</Text>
-     </View>
+        {/* 7. Closing */}
+        <View style={{ marginTop: 40 }}>
+          <Text>Sincerely,</Text>
+          <Text style={{ height: 20 }}>{''}</Text>
+
+          {model.hasSignature && (
+            <Image
+              src={data.signatureData}
+              style={{ width: 120, height: 40, marginBottom: 5 }}
+            />
+          )}
+
+          <Text style={styles.bold}>{data.senderName}</Text>
+        </View>
 
       </Page>
     </Document>

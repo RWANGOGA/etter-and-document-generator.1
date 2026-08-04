@@ -6,6 +6,7 @@ import { Sparkles, Wand2, Loader2 } from 'lucide-react';
 import AIGenerateModal from './AIGenerateModal';
 import { generateLetterContent } from '@/app/actions/aiActions';
 import type { LetterData } from './LetterPreview';
+import { computeLetterModel } from '@/app/lib/letterModel';
 import SignaturePad from './SignaturePad';
 
 interface LetterFormProps {

@@ -15,7 +15,7 @@ const PDFDownloadLink = dynamic(
 import LetterForm from '@/app/components/LetterForm';
 import LetterPreview, { LetterData } from '@/app/components/LetterPreview';
 import LetterPDF from '@/app/components/LetterPDF';
-import { downloadWord } from '@/app/lib/generateWord';
+import { generateLetterWord } from './generateWord';
 
 function EditorPageContent() {
   const searchParams = useSearchParams();
@@ -38,7 +38,7 @@ function EditorPageContent() {
   }, [letterData, layoutParam]);
 
   const handleDownloadWord = () => {
-    downloadWord(letterData, layoutParam);
+    generateLetterWord(letterData, layoutParam);
   };
 
   return (
@@ -65,7 +65,6 @@ function EditorPageContent() {
           <div className="flex items-center gap-3">
             
             {/* PDF Download Button */}
-            {/* PDFDownloadLink is a special component from react-pdf that handles the generation */}
             <PDFDownloadLink
               document={memoizedPdfDocument}
               fileName={`${letterData.senderName || 'Letter'}_FormalLetter.pdf`}
@@ -95,7 +94,7 @@ function EditorPageContent() {
       </div>
 
       {/* SPLIT SCREEN EDITOR */}
-      <div className="flex-grow p-4 md:p-8">
+      <div className="grow p-4 md:p-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
           
           {/* LEFT SIDE: The Input Form */}
