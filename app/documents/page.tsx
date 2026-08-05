@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
-import DocumentEditor from '@/app/components/DocumentEditor';
-import { api } from '@/app/lib/api';
+import { ArrowLeft, Mic } from 'lucide-react';
+import DocumentEditor, { DocumentEditorHandle } from '@/app/components/DocumentEditor';
+import { loadDocument, createDocument, saveDocument } from '@/app/lib/documentStorage';
+import VoiceGenerateModal from '@/app/components/VoiceGenerateModal';
 
 function DocumentsPageContent() {
   const searchParams = useSearchParams();
@@ -13,65 +14,76 @@ function DocumentsPageContent() {
   const [docTitle, setDocTitle] = useState<string>('Untitled Document');
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
 
-  // 1. Initialize documentId from URL param or create new one
+  const editorRef = useRef<DocumentEditorHandle>(null);
+
   useEffect(() => {
     const initializeDocument = async () => {
       try {
         const urlId = searchParams.get('id');
-        
+
         if (urlId) {
-          // Load existing document
-          const doc = await api.documents.get(urlId);
-          setDocumentId(doc.id);
-          setDocTitle(doc.title);
+          const existing = await loadDocument(urlId);
+          if (existing) {
+            setDocumentId(existing.id);
+            setDocTitle(existing.title);
+          } else {
+            setError('Document not found.');
+          }
         } else {
-          // Create new document
-          const newDoc = await api.documents.create({
-            type: 'freeform',
-            title: 'Untitled Document',
-            content: {
-              kind: 'freeform',
-              html: '<p></p>',
-            },
+          const newDoc = await createDocument('freeform', 'Untitled Document', {
+            kind: 'freeform',
+            html: '<p></p>',
           });
           setDocumentId(newDoc.id);
           setDocTitle(newDoc.title);
-          // Update URL with new document ID
-          window.history.replaceState(
-            null,
-            '',
-            `/documents?id=${newDoc.id}`
-          );
+          window.history.replaceState(null, '', `/documents?id=${newDoc.id}`);
         }
-        setIsReady(true);
       } catch (err) {
         console.error('Failed to initialize document:', err);
         setError(err instanceof Error ? err.message : 'Failed to load document');
+      } finally {
         setIsReady(true);
       }
     };
 
-    if (typeof window !== 'undefined') {
-      initializeDocument();
-    }
+    initializeDocument();
   }, [searchParams]);
 
-  // 2. Save title changes to the document record
   const handleTitleChange = async (newTitle: string) => {
     setDocTitle(newTitle);
-
     if (documentId) {
       try {
-        await api.documents.update(documentId, { title: newTitle });
+        await saveDocument({ id: documentId, title: newTitle } as any);
       } catch (err) {
-        console.error('Failed to update document title:', err);
-        setError(err instanceof Error ? err.message : 'Failed to save title');
+        console.error('Failed to update title:', err);
       }
     }
   };
 
-  if (!isReady || !documentId) {
+  // Voice gives back { title, topic, body } for a 'document-report' type.
+  // Assemble it into simple HTML and push it into the TipTap editor.
+  const handleVoiceFieldsUpdated = (fields: Record<string, string>) => {
+    const parts: string[] = [];
+    if (fields.title) parts.push(`<h1>${escapeHtml(fields.title)}</h1>`);
+    if (fields.topic) parts.push(`<p><em>${escapeHtml(fields.topic)}</em></p>`);
+    if (fields.body) {
+      const paragraphs = fields.body
+        .split('\n')
+        .filter((p) => p.trim())
+        .map((p) => `<p>${escapeHtml(p)}</p>`)
+        .join('');
+      parts.push(paragraphs);
+    }
+    editorRef.current?.applyVoiceContent(parts.join(''));
+
+    if (fields.title && fields.title !== docTitle) {
+      handleTitleChange(fields.title);
+    }
+  };
+
+  if (!isReady) {
     return (
       <main className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="text-slate-600">Loading document...</div>
@@ -84,6 +96,9 @@ function DocumentsPageContent() {
       <main className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 font-medium mb-4">Error: {error}</p>
+          <p className="text-sm text-slate-500 mb-4">
+            Make sure the backend is running (docker compose up).
+          </p>
           <Link href="/" className="text-blue-600 hover:underline">
             Return to Home
           </Link>
@@ -94,15 +109,13 @@ function DocumentsPageContent() {
 
   return (
     <main className="min-h-screen bg-slate-100 flex flex-col">
-      {/* Top Navigation */}
       <div className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center gap-3 flex-wrap">
           <Link href="/" className="flex items-center gap-2 text-slate-600 hover:text-blue-600 font-medium transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Back to Home
           </Link>
 
-          {/* EDITABLE TITLE INPUT */}
           <input
             type="text"
             value={docTitle}
@@ -111,16 +124,36 @@ function DocumentsPageContent() {
             placeholder="Name your document..."
           />
 
-          <div className="w-16"></div>
+          <button
+            onClick={() => setShowVoiceModal(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-all shadow-sm"
+            title="Write this document by speaking"
+          >
+            <Mic className="w-4 h-4" />
+            Fill by Voice
+          </button>
         </div>
       </div>
 
-      {/* Editor Area */}
       <div className="grow">
-        <DocumentEditor documentId={documentId} title={docTitle} />
+        <DocumentEditor ref={editorRef} documentId={documentId} title={docTitle} />
       </div>
+
+      <VoiceGenerateModal
+        isOpen={showVoiceModal}
+        onClose={() => setShowVoiceModal(false)}
+        documentType="document-report"
+        onFieldsUpdated={handleVoiceFieldsUpdated}
+      />
     </main>
   );
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 export default function DocumentsPage() {

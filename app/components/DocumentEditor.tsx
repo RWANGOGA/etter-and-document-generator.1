@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useRouter } from 'next/navigation';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -15,24 +16,38 @@ import {
   Download, FileText, FileType
 } from 'lucide-react';
 import { SlashCommand } from './editor/SlashCommandExtension';
+import { generateLetterContent } from '@/app/actions/aiActions';
 import AIGenerateModal from './AIGenerateModal';
 import { generateDocumentWord } from '@/app/lib/documentWordExport';
-import { api } from '@/app/lib/api';
+import { saveDocument, loadDocument, deleteDocument } from '@/app/lib/documentStorage';
+import type { DocumentRecord } from '@/app/types/document';
 
 interface DocumentEditorProps {
   documentId: string;
   title: string;
 }
 
-export default function DocumentEditor({ documentId }: DocumentEditorProps) {
+export interface DocumentEditorHandle {
+  applyVoiceContent: (html: string) => void;
+}
+
+const DocumentEditor = forwardRef<DocumentEditorHandle, DocumentEditorProps>(function DocumentEditor(
+  { documentId, title },
+  ref
+) {
+  const router = useRouter();
   const [isFixing, setIsFixing] = useState(false);
   const [fixError, setFixError] = useState('');
   const [isContinuing, setIsContinuing] = useState(false);
   const [continueError, setContinueError] = useState('');
   const [showAIDocModal, setShowAIDocModal] = useState(false);
   const [theme, setTheme] = useState('academic');
+
+  const [isLoadingDoc, setIsLoadingDoc] = useState(true);
+  const [initialHtml, setInitialHtml] = useState('<p></p>');
   const [watermark, setWatermark] = useState('');
   const [showWatermarkInput, setShowWatermarkInput] = useState(false);
+
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const [isDownloadingWord, setIsDownloadingWord] = useState(false);
@@ -42,22 +57,28 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
   const printAreaRef = useRef<HTMLDivElement>(null);
   const downloadMenuRef = useRef<HTMLDivElement>(null);
 
-  // Persist the document content to the backend API
-  const persist = async (html: string, wm: string) => {
-    try {
-      setIsSaving(true);
-      await api.documents.update(documentId, {
-        content: {
-          kind: 'freeform',
-          html,
-          watermark: wm || undefined,
-        },
-      });
-    } catch (err) {
-      console.error('Failed to save document:', err);
-    } finally {
-      setIsSaving(false);
-    }
+  useEffect(() => {
+    let cancelled = false;
+    loadDocument(documentId).then((doc) => {
+      if (cancelled) return;
+      if (doc && doc.content.kind === 'freeform') {
+        setInitialHtml(doc.content.html);
+        setWatermark(doc.content.watermark || '');
+      }
+      setIsLoadingDoc(false);
+    }).catch((err) => {
+      console.error('Failed to load document:', err);
+      setIsLoadingDoc(false);
+    });
+    return () => { cancelled = true; };
+  }, [documentId]);
+
+  const persist = (html: string, wm: string) => {
+    saveDocument({
+      id: documentId,
+      title,
+      content: { kind: 'freeform', html, watermark: wm },
+    } as any).catch((err) => console.error('Failed to save document:', err));
   };
 
   const editor = useEditor({
@@ -70,7 +91,7 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
       Color,
       Image,
     ],
-    content: '<p></p>',
+    content: initialHtml,
     editorProps: {
       attributes: {
         spellcheck: 'true',
@@ -84,11 +105,26 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
   });
 
   useEffect(() => {
-    if (editor && watermark) {
+    if (editor) {
       persist(editor.getHTML(), watermark);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watermark]);
+
+  useImperativeHandle(ref, () => ({
+    applyVoiceContent: (html: string) => {
+      if (!editor) return;
+      const hasExistingContent = editor.getText().trim().length > 0;
+      if (hasExistingContent) {
+        const confirmed = window.confirm(
+          'This will add the voice-generated content to your document. Continue?'
+        );
+        if (!confirmed) return;
+      }
+      editor.commands.setContent(html);
+      persist(editor.getHTML(), watermark);
+    },
+  }));
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -100,7 +136,9 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (!editor) return null;
+  if (isLoadingDoc || !editor) {
+    return <div className="p-12 text-slate-500 flex items-center justify-center h-full">Loading document...</div>;
+  }
 
   const handleFixGrammar = async () => {
     const currentText = editor.getText();
@@ -113,15 +151,11 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
 
     setIsFixing(true);
     try {
-      const result = await api.generate({
-        prompt: '',
-        mode: 'fix-grammar',
-        currentText,
-      });
+      const result = await generateLetterContent('', 'fix-grammar', currentText);
       if (result.success && result.text) {
         editor.commands.setContent(result.text);
       } else {
-        setFixError(result.error || 'AI Fix Grammar failed for an unknown reason.');
+        setFixError(result.text || 'AI Fix Grammar failed for an unknown reason.');
       }
     } catch (err) {
       console.error('handleFixGrammar unexpected error:', err);
@@ -154,16 +188,12 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
 
     setIsContinuing(true);
     try {
-      const result = await api.generate({
-        prompt: '',
-        mode: 'continue',
-        currentText: editor.getHTML(),
-      });
+      const result = await generateLetterContent('', 'continue', editor.getHTML());
       if (result.success && result.text) {
         editor.chain().focus('end').insertContent(result.text).run();
         persist(editor.getHTML(), watermark);
       } else {
-        setContinueError(result.error || 'AI could not continue the document.');
+        setContinueError(result.text || 'AI could not continue the document.');
       }
     } catch (err) {
       console.error('handleContinueWriting unexpected error:', err);
@@ -233,15 +263,15 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
     }
   };
 
-  const handleClearDocument = async () => {
+  const handleClearDocument = () => {
     if (window.confirm('Are you sure? This will delete your current document and start fresh.')) {
-      try {
-        await api.documents.delete(documentId);
-        window.location.href = '/documents';
-      } catch (err) {
-        console.error('Failed to delete document:', err);
-        alert('Failed to delete document');
-      }
+      deleteDocument(documentId)
+        .then(() => {
+          router.push('/documents');
+        })
+        .catch((err) => {
+          console.error('Failed to delete document:', err);
+        });
     }
   };
 
@@ -267,7 +297,6 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto">
-
       <input
         type="file"
         ref={fileInputRef}
@@ -285,7 +314,6 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
 
       {/* Toolbar */}
       <div className="no-print sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200 p-2 flex gap-1 rounded-t-xl shadow-sm flex-wrap items-center">
-
         <button onClick={() => editor.chain().focus().toggleBold().run()} className={btnClass(editor.isActive('bold'))} title="Bold"><Bold className="w-4 h-4" /></button>
         <button onClick={() => editor.chain().focus().toggleItalic().run()} className={btnClass(editor.isActive('italic'))} title="Italic"><Italic className="w-4 h-4" /></button>
         <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={btnClass(editor.isActive('underline'))} title="Underline"><UnderlineIcon className="w-4 h-4" /></button>
@@ -305,7 +333,7 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
           <ImageIcon className="w-4 h-4" />
         </button>
 
-        <div className="grow"></div>
+        <div className="flex-grow"></div>
 
         <div className="relative">
           <select
@@ -426,12 +454,12 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
       {showWatermarkInput && (
         <div className="no-print bg-amber-50 border-b border-amber-200 p-3 flex items-center gap-3 animate-in slide-in-from-top-2">
           <Stamp className="w-4 h-4 text-amber-600" />
-          <input type="text" value={watermark} onChange={(e) => setWatermark(e.target.value.toUpperCase())} placeholder="e.g., DRAFT, CONFIDENTIAL" className="grow bg-white border border-amber-300 rounded px-3 py-1.5 text-sm font-bold text-amber-800 placeholder-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 uppercase" autoFocus />
+          <input type="text" value={watermark} onChange={(e) => setWatermark(e.target.value.toUpperCase())} placeholder="e.g., DRAFT, CONFIDENTIAL" className="flex-grow bg-white border border-amber-300 rounded px-3 py-1.5 text-sm font-bold text-amber-800 placeholder-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 uppercase" autoFocus />
           <button onClick={() => { setWatermark(''); setShowWatermarkInput(false); }} className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg" title="Remove Watermark"><X className="w-4 h-4" /></button>
         </div>
       )}
 
-      <div className="bg-white shadow-lg border border-slate-200 rounded-b-xl grow overflow-y-auto relative">
+      <div className="bg-white shadow-lg border border-slate-200 rounded-b-xl flex-grow overflow-y-auto relative">
         <div ref={printAreaRef} className={`print-area w-full min-h-full p-12 relative ${theme === 'book' ? 'bg-[#fdfbf3]' : 'bg-white'}`}>
           {watermark && (
             <div className="watermark-layer absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
@@ -554,4 +582,6 @@ export default function DocumentEditor({ documentId }: DocumentEditorProps) {
       `}</style>
     </div>
   );
-}
+});
+
+export default DocumentEditor;

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Sparkles, Loader2 } from 'lucide-react';
-import { api } from '@/app/lib/api';
+import { generateLetterContent } from '@/app/actions/aiActions';
 
 interface AIGenerateModalProps {
   isOpen: boolean;
@@ -46,24 +46,16 @@ export default function AIGenerateModal({
     setIsLoading(true);
     setError('');
 
-    try {
-      const result = await api.generate({
-        prompt: notes,
-        mode: mode,
-      });
+    const result = await generateLetterContent(notes, mode);
 
-      setIsLoading(false);
+    setIsLoading(false);
 
-      if (result.success && result.text) {
-        onGenerated(result.text);
-        setNotes(''); // Clear for next time
-        onClose();
-      } else {
-        setError(result.error || 'Failed to generate. Please check your API key and try again.');
-      }
-    } catch (err) {
-      setIsLoading(false);
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    if (result.success && result.text) {
+      onGenerated(result.text);
+      setNotes(''); // Clear for next time
+      onClose();
+    } else {
+      setError(result.text || 'Failed to generate. Please check your API key and try again.');
     }
   };
 

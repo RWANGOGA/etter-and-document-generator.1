@@ -26,3 +26,20 @@ export interface DocumentRecord {
   updatedAt: string; // ISO string
   content: DocumentContent;
 }
+
+// --- Voice / document-type registry (mirrors backend/app/schemas.py) ---
+
+export interface FieldDef {
+  name: string;
+  label: string;
+  question: string;
+  required: boolean;
+  multiline: boolean;
+}
+
+export interface DocumentTypeDef {
+  id: string;
+  category: 'letter' | 'document';
+  displayName: string;
+  fields: FieldDef[];
+}
