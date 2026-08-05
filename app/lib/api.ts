@@ -98,11 +98,19 @@ export const api = {
       return res.blob();
     },
 
-    compress: async (file: File): Promise<Blob> => {
+    // ✅ Updated: now accepts and sends quality
+    compress: async (file: File, quality: number = 60): Promise<Blob> => {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(`${API_URL}/api/pdf/compress`, { method: 'POST', body: formData });
-      if (!res.ok) throw new Error(`Compress failed: ${res.status}`);
+      formData.append('quality', String(quality));
+      const res = await fetch(`${API_URL}/api/pdf/compress`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Compress failed: ${res.status} ${body}`);
+      }
       return res.blob();
     },
 
@@ -118,7 +126,10 @@ export const api = {
     imagesToPdf: async (files: File[]): Promise<Blob> => {
       const formData = new FormData();
       files.forEach((f) => formData.append('files', f));
-      const res = await fetch(`${API_URL}/api/pdf/images-to-pdf`, { method: 'POST', body: formData });
+      const res = await fetch(`${API_URL}/api/pdf/images-to-pdf`, {
+        method: 'POST',
+        body: formData,
+      });
       if (!res.ok) throw new Error(`Image conversion failed: ${res.status}`);
       return res.blob();
     },
@@ -144,7 +155,10 @@ export const api = {
       formData.append('document_type', documentType);
       formData.append('asking_field', askingField);
 
-      const res = await fetch(`${API_URL}/api/voice/turn`, { method: 'POST', body: formData });
+      const res = await fetch(`${API_URL}/api/voice/turn`, {
+        method: 'POST',
+        body: formData,
+      });
       if (!res.ok) throw new Error(`Voice turn failed: ${res.status}`);
       return res.json();
     },

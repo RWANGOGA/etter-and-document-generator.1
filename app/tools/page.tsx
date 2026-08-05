@@ -13,6 +13,7 @@ export default function ToolsPage() {
   const [watermarkText, setWatermarkText] = useState('');
   const [startPage, setStartPage] = useState(1);
   const [endPage, setEndPage] = useState(1);
+  const [quality, setQuality] = useState(60);          // ← new
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,7 +41,7 @@ export default function ToolsPage() {
           downloadBlob(blob, `split_${startPage}-${endPage}.pdf`);
           break;
         case 'compress':
-          blob = await api.pdfTools.compress(files[0]);
+          blob = await api.pdfTools.compress(files[0], quality);  // ← pass quality
           downloadBlob(blob, 'compressed.pdf');
           break;
         case 'watermark':
@@ -66,7 +67,10 @@ export default function ToolsPage() {
   return (
     <main className="min-h-screen bg-slate-50 py-12">
       <div className="max-w-3xl mx-auto px-6">
-        <Link href="/" className="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 mb-8 font-medium">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 mb-8 font-medium"
+        >
           <ArrowLeft className="w-4 h-4" />
           Back to Home
         </Link>
@@ -91,7 +95,14 @@ export default function ToolsPage() {
           <div className="bg-white border border-slate-200 rounded-xl p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">{currentTool.label}</h2>
-              <button onClick={() => { setActiveTool(null); setFiles([]); setError(''); }} className="text-slate-400 hover:text-slate-600 text-sm">
+              <button
+                onClick={() => {
+                  setActiveTool(null);
+                  setFiles([]);
+                  setError('');
+                }}
+                className="text-slate-400 hover:text-slate-600 text-sm"
+              >
                 Cancel
               </button>
             </div>
@@ -99,11 +110,17 @@ export default function ToolsPage() {
             <label className="flex flex-col items-center gap-2 border-2 border-dashed border-slate-300 rounded-lg p-8 cursor-pointer hover:border-blue-400 transition-colors mb-4">
               <Upload className="w-8 h-8 text-slate-400" />
               <span className="text-sm text-slate-500">
-                {files.length > 0 ? `${files.length} file(s) selected` : 'Click to select file(s)'}
+                {files.length > 0
+                  ? `${files.length} file(s) selected`
+                  : 'Click to select file(s)'}
               </span>
               <input
                 type="file"
-                accept="application/pdf,image/*"
+                accept={
+                  activeTool === 'images-to-pdf'
+                    ? 'image/*'
+                    : 'application/pdf'
+                }
                 multiple={currentTool.multi}
                 className="hidden"
                 onChange={(e) => setFiles(Array.from(e.target.files || []))}
@@ -113,20 +130,64 @@ export default function ToolsPage() {
             {activeTool === 'split' && (
               <div className="flex gap-4 mb-4">
                 <div>
-                  <label className="text-xs text-slate-500 block mb-1">Start Page</label>
-                  <input type="number" min={1} value={startPage} onChange={(e) => setStartPage(Number(e.target.value))} className="border border-slate-300 rounded px-3 py-2 w-24" />
+                  <label className="text-xs text-slate-500 block mb-1">
+                    Start Page
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={startPage}
+                    onChange={(e) => setStartPage(Number(e.target.value))}
+                    className="border border-slate-300 rounded px-3 py-2 w-24"
+                  />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 block mb-1">End Page</label>
-                  <input type="number" min={1} value={endPage} onChange={(e) => setEndPage(Number(e.target.value))} className="border border-slate-300 rounded px-3 py-2 w-24" />
+                  <label className="text-xs text-slate-500 block mb-1">
+                    End Page
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={endPage}
+                    onChange={(e) => setEndPage(Number(e.target.value))}
+                    className="border border-slate-300 rounded px-3 py-2 w-24"
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTool === 'compress' && (
+              <div className="mb-4">
+                <label className="text-xs text-slate-500 block mb-1">
+                  Quality ({quality})
+                </label>
+                <input
+                  type="range"
+                  min={10}
+                  max={95}
+                  value={quality}
+                  onChange={(e) => setQuality(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-slate-400 mt-1">
+                  <span>Smaller</span>
+                  <span>Better quality</span>
                 </div>
               </div>
             )}
 
             {activeTool === 'watermark' && (
               <div className="mb-4">
-                <label className="text-xs text-slate-500 block mb-1">Watermark Text</label>
-                <input type="text" value={watermarkText} onChange={(e) => setWatermarkText(e.target.value)} placeholder="e.g., CONFIDENTIAL" className="border border-slate-300 rounded px-3 py-2 w-full" />
+                <label className="text-xs text-slate-500 block mb-1">
+                  Watermark Text
+                </label>
+                <input
+                  type="text"
+                  value={watermarkText}
+                  onChange={(e) => setWatermarkText(e.target.value)}
+                  placeholder="e.g., CONFIDENTIAL"
+                  className="border border-slate-300 rounded px-3 py-2 w-full"
+                />
               </div>
             )}
 
