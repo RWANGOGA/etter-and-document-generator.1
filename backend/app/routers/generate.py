@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from groq import Groq
@@ -8,6 +9,10 @@ router = APIRouter(prefix="/api/generate", tags=["generate"])
 client = Groq(api_key=settings.groq_api_key)
 
 MODEL = "qwen/qwen3.6-27b"
+
+
+def strip_thinking(text: str) -> str:
+    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
 
 class GenerateRequest(BaseModel):
@@ -39,10 +44,12 @@ async def generate(req: GenerateRequest):
         completion = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=32768,
+            max_tokens=16384,
             temperature=0.7,
+            reasoning_format="hidden",
         )
         text = completion.choices[0].message.content or ""
+        text = strip_thinking(text)
         return GenerateResponse(success=True, text=text.strip())
     except Exception as e:
         return GenerateResponse(success=False, text=str(e))
@@ -100,10 +107,12 @@ async def chat(req: ChatRequest):
         completion = client.chat.completions.create(
             model=MODEL,
             messages=messages,
-            max_tokens=1000,
+            max_tokens=16384,
             temperature=0.7,
+            reasoning_format="hidden",
         )
         text = completion.choices[0].message.content or ""
+        text = strip_thinking(text)
 
         document_html = None
         reply_text = text
