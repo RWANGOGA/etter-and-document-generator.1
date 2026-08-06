@@ -46,7 +46,6 @@ async def generate(req: GenerateRequest):
             messages=[{"role": "user", "content": prompt}],
             max_tokens=16384,
             temperature=0.7,
-            reasoning_format="hidden",
         )
         text = completion.choices[0].message.content or ""
         text = strip_thinking(text)
@@ -109,7 +108,6 @@ async def chat(req: ChatRequest):
             messages=messages,
             max_tokens=16384,
             temperature=0.7,
-            reasoning_format="hidden",
         )
         text = completion.choices[0].message.content or ""
         text = strip_thinking(text)
