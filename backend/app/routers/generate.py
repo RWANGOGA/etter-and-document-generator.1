@@ -100,7 +100,7 @@ async def chat(req: ChatRequest):
         completion = client.chat.completions.create(
             model=MODEL,
             messages=messages,
-            max_tokens=32768,
+            max_tokens=16384,
             temperature=0.7,
         )
         text = completion.choices[0].message.content or ""
