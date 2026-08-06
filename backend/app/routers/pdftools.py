@@ -26,13 +26,18 @@ def _run_task_and_get_output(task, tmpdir: str, input_paths: list[str]) -> bytes
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"iLovePDF task failed: {e}")
 
+    all_files = os.listdir(tmpdir)
+
     input_names = {os.path.basename(p) for p in input_paths}
     output_files = [
-        f for f in os.listdir(tmpdir)
+        f for f in all_files
         if f.endswith(".pdf") and f not in input_names
     ]
     if not output_files:
-        raise HTTPException(status_code=502, detail="No output file returned from iLovePDF")
+        raise HTTPException(
+            status_code=502,
+            detail=f"No output file returned from iLovePDF. tmpdir had: {all_files}",
+        )
 
     with open(os.path.join(tmpdir, output_files[0]), "rb") as f:
         return f.read()
