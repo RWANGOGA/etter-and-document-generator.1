@@ -13,13 +13,15 @@ import {
   Bold, Italic, List, Heading1, Heading2, Sparkles, Loader2,
   Underline as UnderlineIcon, Palette, Stamp, X, Printer,
   RotateCcw, Image as ImageIcon, ChevronDown, PenLine, Wand2,
-  Download, FileText, FileType
+  Download, FileText, FileType, FileCode, MessageSquare
 } from 'lucide-react';
 import { SlashCommand } from './editor/SlashCommandExtension';
 import { generateLetterContent } from '@/app/actions/aiActions';
 import AIGenerateModal from './AIGenerateModal';
+import AIChatPanel from './AIChatPanel';
 import { generateDocumentWord } from '@/app/lib/documentWordExport';
 import { saveDocument, loadDocument, deleteDocument } from '@/app/lib/documentStorage';
+import { api, downloadBlob } from '@/app/lib/api';
 import type { DocumentRecord } from '@/app/types/document';
 
 interface DocumentEditorProps {
@@ -41,6 +43,7 @@ const DocumentEditor = forwardRef<DocumentEditorHandle, DocumentEditorProps>(fun
   const [isContinuing, setIsContinuing] = useState(false);
   const [continueError, setContinueError] = useState('');
   const [showAIDocModal, setShowAIDocModal] = useState(false);
+  const [showAIChatPanel, setShowAIChatPanel] = useState(false);
   const [theme, setTheme] = useState('academic');
 
   const [isLoadingDoc, setIsLoadingDoc] = useState(true);
@@ -51,6 +54,7 @@ const DocumentEditor = forwardRef<DocumentEditorHandle, DocumentEditorProps>(fun
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const [isDownloadingWord, setIsDownloadingWord] = useState(false);
+  const [isDownloadingLatex, setIsDownloadingLatex] = useState(false);
   const [downloadError, setDownloadError] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +129,27 @@ const DocumentEditor = forwardRef<DocumentEditorHandle, DocumentEditorProps>(fun
       persist(editor.getHTML(), watermark);
     },
   }));
+
+  // Render any Mermaid diagram blocks the AI has inserted into the document
+  useEffect(() => {
+    if (!editor) return;
+    import('mermaid').then((mermaidModule) => {
+      const mermaid = mermaidModule.default;
+      mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+      const nodes = document.querySelectorAll('pre.mermaid:not([data-processed])');
+      nodes.forEach(async (node, i) => {
+        const code = node.textContent || '';
+        if (!code.trim()) return;
+        try {
+          const { svg } = await mermaid.render(`mermaid-diagram-${Date.now()}-${i}`, code);
+          node.innerHTML = svg;
+          node.setAttribute('data-processed', 'true');
+        } catch (err) {
+          console.error('Mermaid render error:', err);
+        }
+      });
+    });
+  }, [editor?.getHTML()]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -263,6 +288,20 @@ const DocumentEditor = forwardRef<DocumentEditorHandle, DocumentEditorProps>(fun
     }
   };
 
+  const handleDownloadLatexPDF = async () => {
+    setDownloadError('');
+    setIsDownloadingLatex(true);
+    try {
+      const blob = await api.convert.documentLatexPdf(title, '', editor.getHTML());
+      downloadBlob(blob, `${title || 'Document'}_LaTeX.pdf`);
+    } catch (err) {
+      console.error('LaTeX PDF error:', err);
+      setDownloadError('Could not generate LaTeX PDF. Check that the backend is running.');
+    } finally {
+      setIsDownloadingLatex(false);
+    }
+  };
+
   const handleClearDocument = () => {
     if (window.confirm('Are you sure? This will delete your current document and start fresh.')) {
       deleteDocument(documentId)
@@ -310,6 +349,15 @@ const DocumentEditor = forwardRef<DocumentEditorHandle, DocumentEditorProps>(fun
         onClose={() => setShowAIDocModal(false)}
         onGenerated={handleDocumentGenerated}
         mode="generate-document"
+      />
+
+      <AIChatPanel
+        isOpen={showAIChatPanel}
+        onClose={() => setShowAIChatPanel(false)}
+        onDocumentReady={(html) => {
+          handleDocumentGenerated(html);
+          setShowAIChatPanel(false);
+        }}
       />
 
       {/* Toolbar */}
@@ -389,6 +437,14 @@ const DocumentEditor = forwardRef<DocumentEditorHandle, DocumentEditorProps>(fun
                 {isDownloadingWord ? 'Preparing Word...' : 'Download as Word (.docx)'}
               </button>
               <button
+                onClick={() => { setShowDownloadMenu(false); handleDownloadLatexPDF(); }}
+                disabled={isDownloadingLatex}
+                className="w-full text-left px-3 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 disabled:opacity-50 border-t border-slate-100"
+              >
+                {isDownloadingLatex ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileCode className="w-3.5 h-3.5" />}
+                {isDownloadingLatex ? 'Compiling...' : 'Download LaTeX PDF'}
+              </button>
+              <button
                 onClick={() => { setShowDownloadMenu(false); handlePrint(); }}
                 className="w-full text-left px-3 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
               >
@@ -398,6 +454,15 @@ const DocumentEditor = forwardRef<DocumentEditorHandle, DocumentEditorProps>(fun
             </div>
           )}
         </div>
+
+        <button
+          onClick={() => setShowAIChatPanel(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-purple-700 rounded-lg hover:bg-purple-800 transition-all shadow-sm"
+          title="Chat with AI to build your document"
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          AI Chat
+        </button>
 
         <button
           onClick={() => setShowAIDocModal(true)}
@@ -578,6 +643,18 @@ const DocumentEditor = forwardRef<DocumentEditorHandle, DocumentEditorProps>(fun
           color: #5c4f3a;
           font-style: italic;
           margin: 1rem 0;
+        }
+
+        pre.mermaid {
+          background: transparent;
+          border: none;
+          padding: 1rem 0;
+          text-align: center;
+          overflow-x: auto;
+        }
+        pre.mermaid svg {
+          max-width: 100%;
+          height: auto;
         }
       `}</style>
     </div>

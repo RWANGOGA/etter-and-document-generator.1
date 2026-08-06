@@ -77,6 +77,19 @@ export const api = {
       if (!res.ok) throw new Error(`LaTeX source generation failed: ${res.status}`);
       return res.blob();
     },
+
+    documentLatexPdf: async (title: string, subtitle: string, html: string): Promise<Blob> => {
+      const res = await fetch(`${API_URL}/api/convert/document-latex-pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, subtitle, html }),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Document LaTeX PDF failed (${res.status}): ${body}`);
+      }
+      return res.blob();
+    },
   },
 
   pdfTools: {
@@ -98,7 +111,6 @@ export const api = {
       return res.blob();
     },
 
-    // ✅ Updated: now accepts and sends quality
     compress: async (file: File, quality: number = 60): Promise<Blob> => {
       const formData = new FormData();
       formData.append('file', file);
@@ -161,6 +173,23 @@ export const api = {
       });
       if (!res.ok) throw new Error(`Voice turn failed: ${res.status}`);
       return res.json();
+    },
+  },
+
+  generate: {
+    chat: (messages: { role: string; content: string }[], attachedText: string = '') =>
+      request<{ success: boolean; reply: string; document_html: string | null }>('/api/generate/chat', {
+        method: 'POST',
+        body: JSON.stringify({ messages, attached_text: attachedText }),
+      }),
+
+    extractText: async (file: File): Promise<string> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_URL}/api/generate/extract-text`, { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(`Text extraction failed: ${res.status}`);
+      const data = await res.json();
+      return data.text;
     },
   },
 };
