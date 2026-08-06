@@ -27,11 +27,30 @@ class GenerateResponse(BaseModel):
 
 
 PROMPTS = {
-    "generate": "Write a formal letter body based on these notes. Return only the letter body text:\n\n{notes}",
-    "generate-document": "Write a complete, thorough document as clean HTML based on this topic. Cover the subject in depth with multiple well-developed sections — do not produce a shallow summary:\n\n{notes}",
-    "polish": "Polish and improve this text, keeping the same meaning:\n\n{existing_text}",
-    "fix-grammar": "Fix grammar and spelling in this text, preserving formatting:\n\n{existing_text}",
-    "continue": "Continue writing this document in the same style and tone:\n\n{existing_text}",
+    "generate": """You are an expert at writing formal official letters (university, government, corporate).
+
+Write ONLY the complete letter body (no analysis, no bullet points, no commentary).
+Use standard formal letter structure:
+- Clear subject line if appropriate
+- Polite, professional, concise paragraphs
+- Direct request
+- Courteous closing
+
+Notes from the user:
+{notes}
+
+Return nothing except the letter text itself.""",
+
+    "generate-document": """Write a complete, thorough document as clean HTML based on this topic. 
+Cover the subject in depth with multiple well-developed sections — do not produce a shallow summary:
+
+{notes}""",
+
+    "polish": "Polish and improve this text while keeping the exact same meaning and structure. Return only the improved text:\n\n{existing_text}",
+
+    "fix-grammar": "Fix only grammar, spelling and minor punctuation. Preserve all formatting and meaning. Return only the corrected text:\n\n{existing_text}",
+
+    "continue": "Continue writing this document in the same style, tone and level of detail. Do not repeat previous content:\n\n{existing_text}",
 }
 
 
@@ -40,12 +59,18 @@ async def generate(req: GenerateRequest):
     template = PROMPTS.get(req.mode, PROMPTS["generate"])
     prompt = template.format(notes=req.notes, existing_text=req.existing_text)
 
+    system_msg = "You are a precise formal writing assistant. Follow the instructions exactly."
+    temperature = 0.4 if req.mode in ("generate", "polish", "fix-grammar") else 0.7
+
     try:
         completion = client.chat.completions.create(
             model=MODEL,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": prompt},
+            ],
             max_tokens=4096,
-            temperature=0.7,
+            temperature=temperature,
         )
         text = completion.choices[0].message.content or ""
         text = strip_thinking(text)
@@ -141,7 +166,6 @@ async def chat(req: ChatRequest):
             start = text.index("<DOCUMENT>")
             reply_text = text[:start].strip()
             if "</DOCUMENT>" in text:
-                end = text.index("</DOCUMENT>") + len("</DOCUMENT>")
                 document_html = text[start + len("<DOCUMENT>"):text.index("</DOCUMENT>")].strip()
             else:
                 # still no closing tag even after continuations — take what we have
