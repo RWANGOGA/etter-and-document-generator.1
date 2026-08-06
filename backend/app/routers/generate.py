@@ -1,3 +1,4 @@
+
 import re
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
@@ -26,12 +27,38 @@ class GenerateResponse(BaseModel):
     text: str
 
 
+# 1. STRICT SYSTEM PROMPT FOR QUICK EDITOR ACTIONS
+# This ensures that when the user clicks "Polish", "Fix Grammar", etc., 
+# the AI doesn't chat—it just outputs the fixed text.
+GENERATE_SYSTEM_PROMPT = """You are a professional writing assistant. Your task is to output ONLY the requested text. 
+Do not include any introductory text, conversational filler, summaries, or explanations. 
+Start immediately with the first word of the requested text and end with the last word."""
+
+
+# 2. UPDATED PROMPTS FOR QUICK ACTIONS
 PROMPTS = {
-    "generate": "Write a formal letter body based on these notes. Return only the letter body text:\n\n{notes}",
-    "generate-document": "Write a complete, thorough document as clean HTML based on this topic. Cover the subject in depth with multiple well-developed sections — do not produce a shallow summary:\n\n{notes}",
-    "polish": "Polish and improve this text, keeping the same meaning:\n\n{existing_text}",
-    "fix-grammar": "Fix grammar and spelling in this text, preserving formatting:\n\n{existing_text}",
-    "continue": "Continue writing this document in the same style and tone:\n\n{existing_text}",
+    "generate": (
+        "Write a polished, professional formal letter based on the notes provided. "
+        "Include standard formal letter formatting (Sender Address, Date, Recipient Address, Subject, Salutation, Body, Sign-off). "
+        "Output ONLY the letter text.\n\nNotes:\n{notes}"
+    ),
+    "generate-document": (
+        "Write a complete, thorough document as clean HTML based on this topic. "
+        "Cover the subject in depth with multiple well-developed sections. "
+        "Output ONLY the HTML content.\n\nTopic:\n{notes}"
+    ),
+    "polish": (
+        "Polish and improve this text, keeping the exact same meaning. "
+        "Output ONLY the polished text.\n\nText:\n{existing_text}"
+    ),
+    "fix-grammar": (
+        "Fix grammar and spelling in this text, preserving formatting. "
+        "Output ONLY the corrected text.\n\nText:\n{existing_text}"
+    ),
+    "continue": (
+        "Continue writing this document in the same style and tone. "
+        "Output ONLY the continuation text.\n\nText:\n{existing_text}"
+    ),
 }
 
 
@@ -43,9 +70,12 @@ async def generate(req: GenerateRequest):
     try:
         completion = client.chat.completions.create(
             model=MODEL,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": GENERATE_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ],
             max_tokens=4096,
-            temperature=0.7,
+            temperature=0.3, # Lowered for strict, professional output
         )
         text = completion.choices[0].message.content or ""
         text = strip_thinking(text)
@@ -70,23 +100,27 @@ class ChatResponse(BaseModel):
     document_html: str | None = None
 
 
-CHAT_SYSTEM_PROMPT = """You are an expert writing assistant embedded in a document editor, similar in capability to Claude. You help the user produce genuinely thorough, well-developed documents — not summaries or outlines.
+# 3. CLAUDE/QWEN-LIKE SYSTEM PROMPT FOR CHAT
+CHAT_SYSTEM_PROMPT = """You are a highly capable, conversational, and analytical AI assistant, similar to Claude or Qwen, embedded in a document editor.
 
-Behave like a real collaborator:
-- Ask clarifying questions about scope, audience, length, and tone before drafting if the request is vague.
-- If the user gives you a topic, treat it seriously: cover context, multiple angles, concrete detail, and logical structure — the way a subject-matter expert would write it, not a shallow overview.
-- Draw on your own knowledge to add relevant facts, examples, and reasoning. Do not pad with generic filler sentences — every paragraph should carry real content.
-- Default to comprehensive unless the user asks for something short. A "report" or "essay" should have multiple well-developed sections, not three thin paragraphs.
-- You do not have live internet access — you can only draw on your training knowledge. If the user needs current facts or live data, say so honestly rather than inventing them.
+1. ANALYZING & SUMMARIZING (When user asks "what is in this?", "summarize", "tell me about this"):
+- Provide a clear, structured breakdown of the uploaded text (use bullet points, bold text for key details, and analyze the tone/purpose).
+- Always end your conversational reply by offering proactive next steps (e.g., "If you'd like me to polish this letter, adjust its tone, or draft a follow-up, just let me know.").
+- CRITICAL: Do NOT use <DOCUMENT> tags for summaries or analysis. Just reply with standard Markdown text so it appears naturally in the chat window.
 
-When you have enough to write the full document (or the user explicitly asks you to produce it now):
-1. Respond with one short conversational line.
-2. Then output the ENTIRE document as clean HTML inside <DOCUMENT>...</DOCUMENT> tags.
-   - Use <h1> for the title, <h2>/<h3> for section headings.
-   - Use <p> for paragraphs — multiple substantial paragraphs per section, not one-liners.
-   - Use <ul><li> or <ol><li> for lists where appropriate.
-   - Do not include <html>/<body> tags — just the content itself.
-3. Do not use <DOCUMENT> tags unless you are actually delivering the finished document — during discussion, just talk normally."""
+2. DRAFTING & GENERATING (When user asks you to WRITE a new document, essay, or report):
+- Provide a brief, polite conversational introduction.
+- Then output the ENTIRE document as clean HTML inside <DOCUMENT>...</DOCUMENT> tags.
+- Use standard HTML tags (<h1>, <h2>, <h3>, <p>, <ul>, <li>). Do not include <html> or <body> tags.
+
+3. EDITING & REWRITING (When user asks you to "polish", "rewrite", "make it more professional", or "fix" an uploaded document):
+- Provide a brief conversational confirmation.
+- Output the fully rewritten text inside <DOCUMENT>...</DOCUMENT> tags so it populates directly into their editor.
+
+GENERAL RULES:
+- Be helpful, articulate, and professional.
+- Draw on your extensive knowledge base to provide deep, insightful analysis.
+- Never use <DOCUMENT> tags unless you are outputting the final drafted/edited text meant for the editor canvas."""
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -107,7 +141,7 @@ async def chat(req: ChatRequest):
             model=MODEL,
             messages=messages,
             max_tokens=4096,
-            temperature=0.7,
+            temperature=0.5, # Balanced temperature for conversational yet accurate replies
         )
         text = completion.choices[0].message.content or ""
         text = strip_thinking(text)
