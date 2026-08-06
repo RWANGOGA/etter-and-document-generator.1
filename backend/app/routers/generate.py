@@ -44,7 +44,7 @@ async def generate(req: GenerateRequest):
         completion = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=16384,
+            max_tokens=4096,
             temperature=0.7,
         )
         text = completion.choices[0].message.content or ""
@@ -106,7 +106,7 @@ async def chat(req: ChatRequest):
         completion = client.chat.completions.create(
             model=MODEL,
             messages=messages,
-            max_tokens=16384,
+            max_tokens=4096,
             temperature=0.7,
         )
         text = completion.choices[0].message.content or ""
