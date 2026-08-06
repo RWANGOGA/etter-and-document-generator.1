@@ -1,11 +1,41 @@
+import os
+import tempfile
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import Response
-from pypdf import PdfReader, PdfWriter
+from ilovepdf import MergeTask, SplitTask, CompressTask
 from PIL import Image as PILImage
 import fitz  # PyMuPDF
 import io
 
+from app.config import settings
+
 router = APIRouter(prefix="/api/pdf", tags=["pdf-tools"])
+
+
+def _new_task(task_cls):
+    return task_cls(
+        public_key=settings.ilovepdf_public_key,
+        secret_key=settings.ilovepdf_secret_key,
+    )
+
+
+def _run_task_and_get_output(task, tmpdir: str, input_paths: list[str]) -> bytes:
+    try:
+        task.execute()
+        task.download(tmpdir)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"iLovePDF task failed: {e}")
+
+    input_names = {os.path.basename(p) for p in input_paths}
+    output_files = [
+        f for f in os.listdir(tmpdir)
+        if f.endswith(".pdf") and f not in input_names
+    ]
+    if not output_files:
+        raise HTTPException(status_code=502, detail="No output file returned from iLovePDF")
+
+    with open(os.path.join(tmpdir, output_files[0]), "rb") as f:
+        return f.read()
 
 
 @router.post("/merge")
@@ -13,17 +43,21 @@ async def merge_pdfs(files: list[UploadFile] = File(...)):
     if len(files) < 2:
         raise HTTPException(status_code=400, detail="Need at least 2 PDFs to merge")
 
-    writer = PdfWriter()
-    for file in files:
-        content = await file.read()
-        reader = PdfReader(io.BytesIO(content))
-        for page in reader.pages:
-            writer.add_page(page)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        input_paths = []
+        task = _new_task(MergeTask)
+        for file in files:
+            content = await file.read()
+            path = os.path.join(tmpdir, file.filename or f"file_{len(input_paths)}.pdf")
+            with open(path, "wb") as f:
+                f.write(content)
+            input_paths.append(path)
+            task.add_file(path)
 
-    output = io.BytesIO()
-    writer.write(output)
+        data = _run_task_and_get_output(task, tmpdir, input_paths)
+
     return Response(
-        content=output.getvalue(),
+        content=data,
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=merged.pdf"},
     )
@@ -35,66 +69,44 @@ async def split_pdf(
     start_page: int = Form(...),
     end_page: int = Form(...),
 ):
-    content = await file.read()
-    reader = PdfReader(io.BytesIO(content))
-    writer = PdfWriter()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        content = await file.read()
+        input_path = os.path.join(tmpdir, file.filename or "input.pdf")
+        with open(input_path, "wb") as f:
+            f.write(content)
 
-    total = len(reader.pages)
-    if start_page < 1 or end_page > total or start_page > end_page:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid page range for a {total}-page PDF",
-        )
+        task = _new_task(SplitTask)
+        task.add_file(input_path)
+        task.ranges = [f"{start_page}-{end_page}"]
+        task.merge_after = True
 
-    for i in range(start_page - 1, end_page):
-        writer.add_page(reader.pages[i])
+        data = _run_task_and_get_output(task, tmpdir, [input_path])
 
-    output = io.BytesIO()
-    writer.write(output)
     return Response(
-        content=output.getvalue(),
+        content=data,
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": f"attachment; filename=split_{start_page}-{end_page}.pdf"
-        },
+        headers={"Content-Disposition": f"attachment; filename=split_{start_page}-{end_page}.pdf"},
     )
+
+
 @router.post("/compress")
 async def compress_pdf(file: UploadFile = File(...), quality: int = Form(50)):
-    from PIL import Image as PILImage
+    with tempfile.TemporaryDirectory() as tmpdir:
+        content = await file.read()
+        input_path = os.path.join(tmpdir, file.filename or "input.pdf")
+        with open(input_path, "wb") as f:
+            f.write(content)
 
-    content = await file.read()
-    doc = fitz.open(stream=content, filetype="pdf")
+        task = _new_task(CompressTask)
+        task.add_file(input_path)
 
-    for page in doc:
-        for img in page.get_images(full=True):
-            xref = img[0]
-            try:
-                base_image = doc.extract_image(xref)
-                image_bytes = base_image["image"]
+        data = _run_task_and_get_output(task, tmpdir, [input_path])
 
-                # Re-encode through Pillow at the requested JPEG quality
-                pil_img = PILImage.open(io.BytesIO(image_bytes))
-                if pil_img.mode in ("RGBA", "P"):
-                    pil_img = pil_img.convert("RGB")
-
-                buffer = io.BytesIO()
-                pil_img.save(buffer, format="JPEG", quality=quality, optimize=True)
-                recompressed = buffer.getvalue()
-
-                # Only replace if it's actually smaller
-                if len(recompressed) < len(image_bytes):
-                    doc.update_stream(xref, recompressed)
-            except Exception:
-                continue
-
-    output = io.BytesIO()
-    # garbage=4 removes unused objects, deflate compresses streams/fonts
-    doc.save(output, garbage=4, deflate=True, deflate_images=True, clean=True)
-    doc.close()
-
-    return Response(content=output.getvalue(), media_type="application/pdf", headers={
-        "Content-Disposition": "attachment; filename=compressed.pdf"
-    })
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=compressed.pdf"},
+    )
 
 
 @router.post("/watermark")
@@ -104,7 +116,6 @@ async def watermark_pdf(file: UploadFile = File(...), text: str = Form(...)):
 
     for page in doc:
         rect = page.rect
-        # Better centered diagonal watermark
         page.insert_text(
             (rect.width * 0.15, rect.height * 0.55),
             text,
