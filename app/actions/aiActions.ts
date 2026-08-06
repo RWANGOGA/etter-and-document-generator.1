@@ -66,9 +66,6 @@ function extractCleanContent(rawContent: string | null | undefined): string {
         cleaned = recovered.trim();
       }
     }
-    // If no "Final ...:" header was found, fall through and return `cleaned`
-    // as-is below rather than guessing further - better to show the raw
-    // reasoning (visibly wrong, easy to notice) than silently return nothing.
   }
 
   return cleaned.trim();
@@ -178,14 +175,7 @@ Format the output as clean semantic HTML using ONLY these tags: <h1>, <h2>, <h3>
       ],
       temperature: mode === 'generate' || mode === 'generate-document' ? 0.7 : 0.3,
       max_tokens: mode === 'generate-document' || mode === 'continue' ? 4000 : 2000,
-      // Tells Groq to strip chain-of-thought server-side for reasoning-capable
-      // models (e.g. deepseek-r1-distill-*, qwen-qwq-*, kimi-k2, gpt-oss-*).
-      // Non-reasoning models like llama3-70b-8192 simply ignore this field.
-      // This is the actual fix for the leaked "Thinking Process:" output -
-      // extractCleanContent's pattern-matching above is just a fallback in
-      // case a given model/version doesn't honor this parameter.
-      reasoning_format: 'hidden',
-    } as any);
+    });
 
     const rawContent = completion.choices?.[0]?.message?.content;
     const text = isHtmlMode ? extractCleanHtml(rawContent) : extractCleanContent(rawContent);
