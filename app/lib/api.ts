@@ -175,25 +175,7 @@ export const api = {
       return res.json();
     },
   },
-
-  generate: {
-    chat: (messages: { role: string; content: string }[], attachedText: string = '') =>
-      request<{ success: boolean; reply: string; document_html: string | null }>('/api/generate/chat', {
-        method: 'POST',
-        body: JSON.stringify({ messages, attached_text: attachedText }),
-      }),
-
-    extractText: async (file: File): Promise<string> => {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch(`${API_URL}/api/generate/extract-text`, { method: 'POST', body: formData });
-      if (!res.ok) throw new Error(`Text extraction failed: ${res.status}`);
-      const data = await res.json();
-      return data.text;
-    },
-  },
-
-  office: {
+office: {
     generatePptx: async (payload: {
       topic: string;
       slide_count: number;
@@ -207,6 +189,50 @@ export const api = {
       if (!res.ok) {
         const body = await res.text().catch(() => '');
         throw new Error(`Presentation generation failed: ${body || res.statusText}`);
+      }
+      return res.blob();
+    },
+
+    pptxFromDocument: async (
+      file: File,
+      slideCount: number,
+      instructions: string,
+      theme: { primary_color: string; accent_color: string; text_color: string; font_family: string }
+    ): Promise<Blob> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('slide_count', String(slideCount));
+      formData.append('instructions', instructions);
+      formData.append('primary_color', theme.primary_color);
+      formData.append('accent_color', theme.accent_color);
+      formData.append('text_color', theme.text_color);
+      formData.append('font_family', theme.font_family);
+      const res = await fetch(`${API_URL}/api/pptx/from-document`, { method: 'POST', body: formData });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Presentation from document failed: ${body || res.statusText}`);
+      }
+      return res.blob();
+    },
+
+    pptxChat: (messages: { role: string; content: string }[]) =>
+      request<{ success: boolean; reply: string; structure: Record<string, unknown> | null; ready: boolean }>(
+        '/api/pptx/chat',
+        { method: 'POST', body: JSON.stringify({ messages }) }
+      ),
+
+    pptxBuild: async (
+      structure: Record<string, unknown>,
+      theme: { primary_color: string; accent_color: string; text_color: string; font_family: string }
+    ): Promise<Blob> => {
+      const res = await fetch(`${API_URL}/api/pptx/build`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structure, theme }),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Build failed: ${body || res.statusText}`);
       }
       return res.blob();
     },
@@ -227,9 +253,49 @@ export const api = {
       }
       return res.blob();
     },
+
+    xlsxEnhance: async (
+      file: File,
+      instructions: string,
+      theme: { primary_color: string; text_color: string; font_family: string }
+    ): Promise<Blob> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('instructions', instructions);
+      formData.append('primary_color', theme.primary_color);
+      formData.append('text_color', theme.text_color);
+      formData.append('font_family', theme.font_family);
+      const res = await fetch(`${API_URL}/api/xlsx/enhance`, { method: 'POST', body: formData });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Spreadsheet enhancement failed: ${body || res.statusText}`);
+      }
+      return res.blob();
+    },
+
+    xlsxChat: (messages: { role: string; content: string }[]) =>
+      request<{ success: boolean; reply: string; structure: Record<string, unknown> | null; ready: boolean }>(
+        '/api/xlsx/chat',
+        { method: 'POST', body: JSON.stringify({ messages }) }
+      ),
+
+    xlsxBuild: async (
+      structure: Record<string, unknown>,
+      theme: { primary_color: string; text_color: string; font_family: string }
+    ): Promise<Blob> => {
+      const res = await fetch(`${API_URL}/api/xlsx/build`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structure, theme }),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Build failed: ${body || res.statusText}`);
+      }
+      return res.blob();
+    },
   },
 };
-
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
