@@ -175,7 +175,25 @@ export const api = {
       return res.json();
     },
   },
-office: {
+
+  generate: {
+    chat: (messages: { role: string; content: string }[], attachedText: string = '') =>
+      request<{ success: boolean; reply: string; document_html: string | null }>('/api/generate/chat', {
+        method: 'POST',
+        body: JSON.stringify({ messages, attached_text: attachedText }),
+      }),
+
+    extractText: async (file: File): Promise<string> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_URL}/api/generate/extract-text`, { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(`Text extraction failed: ${res.status}`);
+      const data = await res.json();
+      return data.text;
+    },
+  },
+
+  office: {
     generatePptx: async (payload: {
       topic: string;
       slide_count: number;
@@ -296,6 +314,7 @@ office: {
     },
   },
 };
+
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
