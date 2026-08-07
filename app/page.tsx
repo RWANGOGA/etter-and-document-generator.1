@@ -1,9 +1,23 @@
 import Link from 'next/link';
-import { FileText, BookOpen, Wrench } from 'lucide-react';
+import { FileText, BookOpen, Wrench, LayoutGrid } from 'lucide-react';
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-white overflow-hidden">
+
+      {/* TOP NAV — standalone bar, not overlaying the hero */}
+      <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+          <span className="text-slate-900 font-bold text-lg tracking-tight">LetDoc</span>
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900 transition-colors"
+          >
+            <LayoutGrid className="w-4 h-4" />
+            My Documents
+          </Link>
+        </div>
+      </nav>
 
       {/* HERO SECTION */}
       <section
