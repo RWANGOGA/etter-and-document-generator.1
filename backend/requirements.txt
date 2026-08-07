@@ -18,3 +18,5 @@ edge-tts==7.2.8
 python-docx==1.1.2
 beautifulsoup4==4.12.3
 ilovepdf
+python-pptx
+openpyxl

@@ -192,6 +192,42 @@ export const api = {
       return data.text;
     },
   },
+
+  office: {
+    generatePptx: async (payload: {
+      topic: string;
+      slide_count: number;
+      theme: { primary_color: string; accent_color: string; text_color: string; font_family: string };
+    }): Promise<Blob> => {
+      const res = await fetch(`${API_URL}/api/pptx/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Presentation generation failed: ${body || res.statusText}`);
+      }
+      return res.blob();
+    },
+
+    generateXlsx: async (payload: {
+      topic: string;
+      row_count: number;
+      theme: { primary_color: string; text_color: string; font_family: string };
+    }): Promise<Blob> => {
+      const res = await fetch(`${API_URL}/api/xlsx/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Spreadsheet generation failed: ${body || res.statusText}`);
+      }
+      return res.blob();
+    },
+  },
 };
 
 export function downloadBlob(blob: Blob, filename: string) {

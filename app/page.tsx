@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FileText, BookOpen, Wrench, LayoutGrid } from 'lucide-react';
+import { FileText, BookOpen, Wrench, LayoutGrid, Presentation } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -54,8 +54,8 @@ export default function Home() {
             From a quick formal letter to a fully formatted coursework report — type your words, and we handle every margin, heading, and page break.
           </p>
 
-          {/* THE THREE PATHS */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up animation-delay-400">
+          {/* THE FOUR PATHS */}
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center items-center animate-fade-in-up animation-delay-400">
             <Link
               href="/generator"
               className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40 hover:scale-105"
@@ -70,6 +70,14 @@ export default function Home() {
             >
               <BookOpen className="w-5 h-5" />
               Create a Document / Report
+            </Link>
+
+            <Link
+              href="/office"
+              className="inline-flex items-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-white/10 border-2 border-white/30 rounded-xl hover:border-amber-400 hover:text-amber-300 hover:bg-white/15 transition-all shadow-sm hover:shadow-md hover:scale-105 backdrop-blur-sm"
+            >
+              <Presentation className="w-5 h-5" />
+              Slides &amp; Sheets
             </Link>
 
             <Link
@@ -162,10 +170,10 @@ export default function Home() {
         <div className="relative z-10 max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">Choose Your Tool</h2>
-            <p className="text-slate-600">Three focused tools, each built for a different kind of writing.</p>
+            <p className="text-slate-600">Four focused tools, each built for a different kind of writing.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Letter Card */}
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-6">
@@ -228,6 +236,38 @@ export default function Home() {
                 </li>
               </ul>
               <Link href="/documents" className="text-purple-600 font-semibold hover:underline">Start a Document &rarr;</Link>
+            </div>
+
+            {/* Slides & Sheets Card */}
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all">
+              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center mb-6">
+                <Presentation className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Slides &amp; Sheets</h3>
+              <p className="text-slate-600 leading-relaxed mb-6">
+                Describe a topic and get a fully written, styled PowerPoint or Excel file — pick your colors, it does the rest.
+              </p>
+              <ul className="space-y-2 text-sm text-slate-500 mb-6">
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Full slide decks, written for you
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Structured spreadsheets from a topic
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Your colors, your fonts
+                </li>
+              </ul>
+              <Link href="/office" className="text-amber-600 font-semibold hover:underline">Build a Deck or Sheet &rarr;</Link>
             </div>
 
             {/* PDF Tools Card */}

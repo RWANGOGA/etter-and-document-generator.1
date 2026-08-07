@@ -70,11 +70,14 @@ export default function DashboardPage() {
   };
 
   const getDocHref = (doc: DocumentRecord) => {
-    if (doc.type === 'letter') {
-      return `/editor?letter=${encodeURIComponent(doc.title)}&layout=block`;
-    }
-    return `/documents?id=${doc.id}`;
-  };
+  if (doc.type === 'letter') {
+    const layout = doc.content.kind === 'letter' ? doc.content.layout : 'block';
+    const letterType = doc.content.kind === 'letter' ? doc.content.letterType : doc.title;
+    return `/editor?id=${doc.id}&letter=${encodeURIComponent(letterType)}&layout=${layout}`;
+  }
+  return `/documents?id=${doc.id}`;
+
+};
 
   return (
     <main className="min-h-screen bg-slate-50">
